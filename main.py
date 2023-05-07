@@ -1,22 +1,10 @@
 import argparse
 from lib.tui import *
+from lib.core import *
 
 VERSION = "alpha 0.1"
 
-# Set up argument parser for command line options
-# 1. Verbose (debug mode)
-# 2. Help
-parser = argparse.ArgumentParser(
-    prog="Warehouse Navigator",
-    description="Find your way around the warehouse! ",
-)
-parser.add_argument(
-    "-v",
-    "--verbose",
-    action="store_true",
-    help="Verbose (Debug) mode",
-)
-args = parser.parse_args()
+CONF = Config()
 
 start_menu = Menu(
     text="Start menu",
@@ -25,7 +13,19 @@ start_menu = Menu(
     ],
 )
 
-settings_menu = Menu(text="Settings menu", options=[])
+
+def config_random(conf: Config):
+    bool_random = get_response("Want it random? ", "b", 1)
+    conf.random_item = bool_random
+    print(f"Set random item to {bool_random[0]}")
+
+
+settings_menu = Menu(
+    text="Settings menu",
+    options=[
+        ("Random?", lambda: config_random(CONF)),
+    ],
+)
 
 main_menu = Menu(
     text=f"Warehouse Navigator {VERSION}",
@@ -42,4 +42,19 @@ def main():
 
 
 if __name__ == "__main__":
+    # Set up argument parser for command line options
+    # 1. Verbose (debug mode)
+    # 2. Help
+    parser = argparse.ArgumentParser(
+        prog="Warehouse Navigator",
+        description="Find your way around the warehouse! ",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Verbose (Debug) mode",
+    )
+    args = parser.parse_args()
+
     main()
