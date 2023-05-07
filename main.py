@@ -6,10 +6,17 @@ VERSION = "alpha 0.1"
 
 CONF = Config()
 
+
+def input_products_ids(conf: Config):
+    size = get_response("Input number of products", "d", 1)[0]
+    products = get_response("Products IDs", "d", size)
+
+
 start_menu = Menu(
     text="Start menu",
     options=[
         ("oof", lambda: print("Poof! ")),
+        ("Products? ", lambda: input_products_ids(CONF)),
     ],
 )
 
