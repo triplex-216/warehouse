@@ -1,9 +1,4 @@
-# class MenuOption:
-#     def __init__(self, text: str, form: str, count: int = 1) -> None:
-#         self.text = text
-#         self.format = form
-#         self.count = count
-
+from .core import Config
 
 class Menu:
     """
@@ -115,11 +110,11 @@ def get_response(text: str, form: str, count: int):
                     case "s":
                         res = str(res)
                     case "b":
-                        if res in ["Y", "y"]: 
+                        if res in ["Y", "y"]:
                             res = True
-                        elif res in ["N", "n"]: 
+                        elif res in ["N", "n"]:
                             res = False
-                        else: 
+                        else:
                             print("Please input Y/N")
                             continue
 
@@ -131,3 +126,71 @@ def get_response(text: str, form: str, count: int):
                 continue
 
     return res_list
+
+
+# Draw the text map
+def draw_text_map(my_list, pd_list, config: Config):
+    # Set worker position
+    worker_x = config.worker_positon[0]
+    worker_y = config.worker_positon[1]
+    my_list[worker_x][worker_y] = "WK"
+
+    # Set product_square red
+    for pd in pd_list:
+        x = pd[0]
+        y = pd[1]
+        my_list[x][y] = "SH"
+
+    # get the number of rows and columns in the list
+    num_rows = len(my_list)
+    num_cols = len(my_list[0])
+
+    # create a new 2D list with axis indices
+    new_list = [[" " for j in range(num_cols + 1)] for i in range(num_rows + 1)]
+
+    # add the row and column indices
+    new_list[0][0] = "  "
+    for i in range(num_rows):
+        if num_rows > 9:
+            new_list[i + 1][0] = f"{i:02d}"
+        else:
+            new_list[i + 1][0] = str(i)
+    for j in range(num_cols):
+        if num_cols > 9:
+            new_list[0][j + 1] = f"{j:02d}"
+        else:
+            new_list[0][j + 1] = str(j)
+
+    # copy over the original list
+    for i in range(num_rows):
+        for j in range(num_cols):
+            new_list[i + 1][j + 1] = my_list[i][j]
+
+    # print the new list
+    for row in reversed(new_list):
+        print(" ".join(row))
+
+
+# Show the detailed route on the map
+def route_map(map_data, shortest_path):
+    for i in range(1, len(shortest_path)):
+        c1 = shortest_path[i - 1]
+        c2 = shortest_path[i]
+
+        while c1[0] != c2[0]:
+            if c1[0] < c2[0]:
+                c1 = (c1[0] + 1, c1[1])
+                map_data[c1[0]][c1[1]] = "^ "
+            else:
+                c1 = (c1[0] - 1, c1[1])
+                map_data[c1[0]][c1[1]] = "v "
+
+        while c1[1] != c2[1]:
+            if c1[1] < c2[1]:
+                c1 = (c1[0], c1[1] + 1)
+                map_data[c1[0]][c1[1]] = "> "
+            else:
+                c1 = (c1[0], c1[1] - 1)
+                map_data[c1[0]][c1[1]] = "< "
+
+    return map_data
