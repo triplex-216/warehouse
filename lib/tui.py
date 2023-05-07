@@ -74,6 +74,11 @@ class Menu:
 def get_response(text: str, form: str, count: int):
     """
     Prompt user for input. Format and count can be specified.
+
+    text: Message to be printed
+    form: Format of data to input, can be: d(integer), f(float), s(string), or b(boolean)
+    count: Number of data to input
+
     e.g. (form="d", count=10) => 10 Integers
     """
     res_list = []

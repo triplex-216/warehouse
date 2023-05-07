@@ -6,6 +6,8 @@ VERSION = "alpha 0.1"
 
 CONF = Config()
 
+""" Start Menu """
+
 
 def input_products_ids(conf: Config):
     size = get_response("Input number of products", "d", 1)[0]
@@ -20,8 +22,10 @@ start_menu = Menu(
     ],
 )
 
+""" Settings Menu """
 
-def config_random(conf: Config):
+
+def input_config_random(conf: Config):
     bool_random = get_response("Want it random? ", "b", 1)
     conf.random_item = bool_random
     print(f"Set random item to {bool_random[0]}")
@@ -30,9 +34,13 @@ def config_random(conf: Config):
 settings_menu = Menu(
     text="Settings menu",
     options=[
-        ("Random?", lambda: config_random(CONF)),
+        ("Random?", lambda: input_config_random(CONF)),
     ],
 )
+
+
+""" Main Menu """
+
 
 main_menu = Menu(
     text=f"Warehouse Navigator {VERSION}",
@@ -42,6 +50,8 @@ main_menu = Menu(
         ("Exit", None),
     ],
 )
+
+""" Main """
 
 
 def main():
