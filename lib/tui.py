@@ -69,3 +69,60 @@ class Menu:
                 break
 
         return res
+
+
+def get_response(text: str, form: str, count: int):
+    """
+    Prompt user for input. Format and count can be specified.
+    e.g. (form="d", count=10) => 10 Integers
+    """
+    res_list = []
+
+    if form not in ["d", "f", "s", "b"]:
+        raise Exception(
+            "Format must be d(integer), f(float), s(string), or b(boolean). "
+        )
+
+    match form:
+        case "d":
+            form_description = "Integer"
+        case "f":
+            form_description = "Any number"
+        case "s":
+            form_description = "Text"
+        case "b":
+            form_description = "Y/N"
+
+    print(text)
+    for c in range(count):
+        while True:  # Re-prompt for input if fails
+            res = input(f"{form_description} ({c+1}/{count})")
+            if res == "q" or res == "Q":
+                return -1
+
+            # Handle response with correct format
+            try:
+                match form:
+                    case "d":
+                        res = int(res)
+                    case "f":
+                        res = float(res)
+                    case "s":
+                        res = str(res)
+                    case "b":
+                        if res in ["Y", "y"]: 
+                            res = True
+                        elif res in ["N", "n"]: 
+                            res = False
+                        else: 
+                            print("Please input Y/N")
+                            continue
+
+                res_list.append(res)
+                break
+
+            except ValueError:
+                print("Value error")
+                continue
+
+    return res_list
