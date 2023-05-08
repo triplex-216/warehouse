@@ -13,11 +13,16 @@ def input_products_ids(conf: Config):
     size = get_response("Input number of products", "d", 1)[0]
     products = get_response("Products IDs", "d", size)
 
+def output_show_map(): 
+    # Read inventory data from text file
+    map_data, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
+    mock_prod_list = [(3, 4)]
+    draw_text_map(map_data, mock_prod_list, CONF)
 
 start_menu = Menu(
     text="Start menu",
     options=[
-        ("oof", lambda: print("Poof! ")),
+        ("Show the map", lambda: output_show_map()),
         ("Products? ", lambda: input_products_ids(CONF)),
     ],
 )

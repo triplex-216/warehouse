@@ -1,5 +1,6 @@
 from .core import Config
 
+
 class Menu:
     """
     Menu to be displayed in the TUI (text user interface).
@@ -129,45 +130,56 @@ def get_response(text: str, form: str, count: int):
 
 
 # Draw the text map
-def draw_text_map(my_list, pd_list, config: Config):
+def draw_text_map(
+    map_data: list[list[int]], pd_list: list[tuple[int, int]], config: Config
+):
+    # Initialize ASCII map buffer
+    cols, rows = len(map_data[0]), len(map_data)
+    # Preserve 1 row & 1 col for axes
+    map_ascii = [["__"] * (cols) for r in range(rows)]
+
     # Set worker position
-    worker_x = config.worker_positon[0]
-    worker_y = config.worker_positon[1]
-    my_list[worker_x][worker_y] = "WK"
+    worker_x = config.worker_position[0]
+    worker_y = config.worker_position[1]
+    map_ascii[worker_x][worker_y] = "WK"
 
-    # Set product_square red
+    for r in range(rows):
+        for c in range(cols):
+            # Mark all 1's in map_data as non-destination shelves
+            # (obstacles) in ASCII map
+            if map_data[r][c] == 1:
+                map_ascii[r][c] = "**"
+
+    # Mark destination shelves where products need to be fetched
+    # from as "SH"
     for pd in pd_list:
-        x = pd[0]
-        y = pd[1]
-        my_list[x][y] = "SH"
-
-    # get the number of rows and columns in the list
-    num_rows = len(my_list)
-    num_cols = len(my_list[0])
+        r = pd[0]
+        c = pd[1]
+        map_ascii[r][c] = "SH"
 
     # create a new 2D list with axis indices
-    new_list = [[" " for j in range(num_cols + 1)] for i in range(num_rows + 1)]
+    map_with_axes = [[" " for j in range(cols + 1)] for i in range(rows + 1)]
 
     # add the row and column indices
-    new_list[0][0] = "  "
-    for i in range(num_rows):
-        if num_rows > 9:
-            new_list[i + 1][0] = f"{i:02d}"
+    map_with_axes[0][0] = "  "
+    for i in range(rows):
+        if rows > 9:
+            map_with_axes[i + 1][0] = f"{i:02d}"
         else:
-            new_list[i + 1][0] = str(i)
-    for j in range(num_cols):
-        if num_cols > 9:
-            new_list[0][j + 1] = f"{j:02d}"
+            map_with_axes[i + 1][0] = str(i)
+    for j in range(cols):
+        if cols > 9:
+            map_with_axes[0][j + 1] = f"{j:02d}"
         else:
-            new_list[0][j + 1] = str(j)
+            map_with_axes[0][j + 1] = str(j)
 
     # copy over the original list
-    for i in range(num_rows):
-        for j in range(num_cols):
-            new_list[i + 1][j + 1] = my_list[i][j]
+    for i in range(rows):
+        for j in range(cols):
+            map_with_axes[i + 1][j + 1] = map_ascii[i][j]
 
     # print the new list
-    for row in reversed(new_list):
+    for row in reversed(map_with_axes):
         print(" ".join(row))
 
 
