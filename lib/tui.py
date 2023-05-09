@@ -22,6 +22,7 @@ class Menu:
         while True:
             option_exit = len(self.options) + 1
             # Print text and options
+            print() # New line
             warn(self.text)
             for idx, o in enumerate(self.options):
                 print(f"{idx + 1}. {o[0]}")
@@ -240,3 +241,4 @@ def print_map(map_text: str):
     # print the new list
     for row in reversed(map_text):
         print(" ".join(row))
+    print() # New line

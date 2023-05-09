@@ -19,7 +19,7 @@ def input_config_random(conf: Config):
     bool_random = get_user_input(
         "Do you want to use a random item when inputted ID is invalid? ", "b", 1
     )
-    conf.use_random_item = bool_random
+    conf.use_random_item = bool_random[0]
     print(f"Set random item to {bool_random[0]}")
 
 
@@ -58,13 +58,18 @@ def start_routing(conf: Config):
                 ):  # Avoid duplicate ID; chance is extremely low
                     random_item_id = choice(valid_ids)
                 item_ids[idx] = random_item_id
-                debug(f"Item {i} does not exist, replacing it with {random_item_id}! ")
+                warn(f"Item #{i} does not exist, replacing it with Item #{random_item_id}! ")
 
     # DEBUG FEATURE
     # Limit to 1 item
     item_ids = item_ids[:1]
 
     item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
+
+    if len(item_locations) == 0:
+        warn("The item(s) requested are not available at the moment. ")
+        return -1
+
     route = find_route(map=map_data, start=CONF.worker_position, end=item_locations[0])
     route_back = find_route(map=map_data, start=route[-1], end=CONF.worker_position)
 

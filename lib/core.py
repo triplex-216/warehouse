@@ -72,5 +72,9 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
 def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
     prod_list = []
     for id in id_list:
-        prod_list.append((product_db[id].x, product_db[id].y))
+        try:
+            prod_list.append((product_db[id].x, product_db[id].y))
+        except KeyError:
+            print(f"Item {id} not found, skipping...")
+
     return prod_list
