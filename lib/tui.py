@@ -67,6 +67,7 @@ class Menu:
         return res
 
 
+""" Input/Ouput """
 def get_user_input(text: str, form: str, count: int):
     """
     Prompt user for input. Format and count can be specified.
@@ -129,6 +130,18 @@ def get_user_input(text: str, form: str, count: int):
 
     return res_list
 
+def warn(text=""):
+    """
+    Print a line of text in bold text
+    """
+    print(f"\033[1m{text}\033[0m")
+
+
+def debug(text=""):
+    """
+    Print a line of text with [DEBUG]
+    """
+    print(f"[DEBUG] {text}")
 
 """ Text map """
 

@@ -53,7 +53,7 @@ def start_routing():
             ):  # Avoid duplicate ID; chance is extremely low
                 random_item_id = choice(valid_ids)
             item_ids[idx] = random_item_id
-            print(f"{i} does not exist, replacing it with {random_item_id}! ")
+            debug(f"Item {i} does not exist, replacing it with {random_item_id}! ")
 
     item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
     route = find_route(map=map_data, start=CONF.worker_position, end=item_locations[0])
@@ -66,6 +66,8 @@ def start_routing():
     map_text = add_paths_to_map(map_text, route_back)
     # Add axes to map for easier reading
     map_full = add_axes_to_map(map_text, rows, cols)
+
+    warn("\nWAREHOUSE MAP\n")
     print_map(map_full)
 
     print_instructions(route)
