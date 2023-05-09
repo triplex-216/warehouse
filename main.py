@@ -1,4 +1,5 @@
 import argparse
+from random import choice
 from lib.tui import *
 from lib.core import *
 from lib.route import *
@@ -34,15 +35,27 @@ def start_routing():
     map_data, prod_db = read_inventory_data(DATASET)
     rows, cols = len(map_data), len(map_data[0])
 
-    # item_count = get_user_input("How many items would you like to fetch? ", "d", 1)[0]
-    # item_ids = get_user_input(
-    #     "Please input IDs of the items you wish to add to list", "d", item_count
-    # )
+    item_count = get_user_input("How many items would you like to fetch? ", "d", 1)[0]
+    item_ids = get_user_input(
+        "Please input IDs of the items you wish to add to list", "d", item_count
+    )
 
-    mock_item_list = [571]  # Use a specific item during development phase
+    # DEBUG FEATURE
+    # Pick random item when specified item ID does not exist
+    valid_ids = list(prod_db.keys())
+    # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
+    for idx, i in enumerate(item_ids):
+        if i not in valid_ids:
+            # Replace invalid ID with random item
+            random_item_id = item_ids[0]
+            while (
+                random_item_id in item_ids
+            ):  # Avoid duplicate ID; chance is extremely low
+                random_item_id = choice(valid_ids)
+            item_ids[idx] = random_item_id
+            print(f"{i} does not exist, replacing it with {random_item_id}! ")
 
-    # item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
-    item_locations = get_item_locations(product_db=prod_db, id_list=mock_item_list)
+    item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
     route = find_route(map=map_data, start=CONF.worker_position, end=item_locations[0])
     route_back = find_route(map=map_data, start=route[-1], end=CONF.worker_position)
 
