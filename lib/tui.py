@@ -99,11 +99,12 @@ def get_user_input(text: str, form: str, count: int):
         case "b":
             form_description = "Y/N"
 
-    print(text)
+    print(f"{text} ({form_description})")
     for c in range(count):
         while True:  # Re-prompt for input if fails
-            print(f"> {form_description}, {c+1}/{count}")
-            res = input(f"> ")
+            # print(format_hint)
+            count_hint = f"({c+1}/{count}) "
+            res = input(f"> {count_hint if count > 1 else ''}")
             if res == "q" or res == "Q":
                 return -1
 
