@@ -72,7 +72,7 @@ def get_step_instruction(position, next_position):
     return dir
 
 
-def show_route(route):
+def print_instructions(route):
     """
     get instructions of a given route
     """

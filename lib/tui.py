@@ -59,7 +59,7 @@ class Menu:
             elif callable(next_action):
                 # If option is bound to a function
                 res = next_action()  # Propagate last function return upwards
-                continue # Stays in the menu
+                continue  # Stays in the menu
             else:
                 # If the option's next menu is None, exit current menu
                 break
@@ -130,6 +130,9 @@ def get_user_input(text: str, form: str, count: int):
     return res_list
 
 
+""" Text map """
+
+
 # Draw the text map
 def draw_text_map(
     map_data: list[list[int]], pd_list: list[tuple[int, int]], config: Config
@@ -137,27 +140,32 @@ def draw_text_map(
     # Initialize ASCII map buffer
     cols, rows = len(map_data[0]), len(map_data)
     # Preserve 1 row & 1 col for axes
-    map_ascii = [["__"] * (cols) for r in range(rows)]
+    map_text = [["__"] * (cols) for r in range(rows)]
 
     # Set worker position
     worker_x = config.worker_position[0]
     worker_y = config.worker_position[1]
-    map_ascii[worker_x][worker_y] = "WK"
+    map_text[worker_x][worker_y] = "WK"
 
     for r in range(rows):
         for c in range(cols):
             # Mark all 1's in map_data as non-destination shelves
             # (obstacles) in ASCII map
             if map_data[r][c] == 1:
-                map_ascii[r][c] = "**"
+                map_text[r][c] = "**"
 
     # Mark destination shelves where products need to be fetched
     # from as "SH"
     for pd in pd_list:
         r = pd[0]
         c = pd[1]
-        map_ascii[r][c] = "SH"
+        map_text[r][c] = "SH"
 
+    return map_text
+
+
+# Add X and Y axes to the text map
+def add_axes_to_map(map_text, rows, cols):
     # create a new 2D list with axis indices
     map_with_axes = [[" " for j in range(cols + 1)] for i in range(rows + 1)]
 
@@ -177,33 +185,38 @@ def draw_text_map(
     # copy over the original list
     for i in range(rows):
         for j in range(cols):
-            map_with_axes[i + 1][j + 1] = map_ascii[i][j]
+            map_with_axes[i + 1][j + 1] = map_text[i][j]
 
-    # print the new list
-    for row in reversed(map_with_axes):
-        print(" ".join(row))
+    return map_with_axes
 
 
-# Show the detailed route on the map
-def route_map(map_data, shortest_path):
-    for i in range(1, len(shortest_path)):
-        c1 = shortest_path[i - 1]
-        c2 = shortest_path[i]
+# Show the detailed route on the text map
+def add_paths_to_map(map_text, paths):
+    for i in range(1, len(paths)):
+        c1 = paths[i - 1]
+        c2 = paths[i]
 
         while c1[0] != c2[0]:
             if c1[0] < c2[0]:
                 c1 = (c1[0] + 1, c1[1])
-                map_data[c1[0]][c1[1]] = "^ "
+                map_text[c1[0]][c1[1]] = "^^"
             else:
                 c1 = (c1[0] - 1, c1[1])
-                map_data[c1[0]][c1[1]] = "v "
+                map_text[c1[0]][c1[1]] = "vv"
 
         while c1[1] != c2[1]:
             if c1[1] < c2[1]:
                 c1 = (c1[0], c1[1] + 1)
-                map_data[c1[0]][c1[1]] = "> "
+                map_text[c1[0]][c1[1]] = ">>"
             else:
                 c1 = (c1[0], c1[1] - 1)
-                map_data[c1[0]][c1[1]] = "< "
+                map_text[c1[0]][c1[1]] = "<<"
 
-    return map_data
+    return map_text
+
+
+# Print generated text maps
+def print_map(map_text: str):
+    # print the new list
+    for row in reversed(map_text):
+        print(" ".join(row))
