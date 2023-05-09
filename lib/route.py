@@ -86,12 +86,19 @@ def print_instructions(route):
             dis += 1
         else:
             print(
-                f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {(pos[1], pos[0])}"
+                f"From {(start[1], start[0])} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {(pos[1], pos[0])}"
             )
             instruction = new_instruction
             start = pos
             dis = 1
     print(
-        f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {(next_pos[1], next_pos[0])}"
+        f"From {(start[1], start[0])}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {(next_pos[1], next_pos[0])}"
     )
-    print("Pick up the product!")
+    if route[-1] == (0, 1):
+        print("From (1, 0), move 1 step left to (0, 0)")
+        print("Return to the start position.")
+    elif route[-1] == (1, 0):
+        print("From (0, 1), move 1 step down to (0, 0)")
+        print("Return to the start position.")
+    else:
+        print("Pick up the product!")

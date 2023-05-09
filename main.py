@@ -39,9 +39,7 @@ def start_routing(conf: Config):
     map_data, prod_db = read_inventory_data(DATASET)
     rows, cols = len(map_data), len(map_data[0])
 
-    item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[
-        0
-    ]
+    item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[0]
     item_ids = input_data_as_list(
         "Please input IDs of the items you wish to add to list", "d", item_count
     )
@@ -60,9 +58,7 @@ def start_routing(conf: Config):
                 ):  # Avoid duplicate ID; chance is extremely low
                     random_item_id = choice(valid_ids)
                 item_ids[idx] = random_item_id
-                warn(
-                    f"Item #{i} does not exist, replacing it with Item #{random_item_id}! "
-                )
+                debug(f"Item {i} does not exist, replacing it with {random_item_id}! ")
 
     # DEBUG FEATURE
     # Limit to 1 item
@@ -81,7 +77,6 @@ def start_routing(conf: Config):
     map_text = draw_text_map(map_data, item_locations, CONF)
     # Add route paths to map
     map_text = add_paths_to_map(map_text, route)
-    map_text = add_paths_to_map(map_text, route_back)
     # Add axes to map for easier reading
     map_full = add_axes_to_map(map_text, rows, cols)
 
@@ -89,6 +84,16 @@ def start_routing(conf: Config):
     print_map(map_full)
 
     print_instructions(route)
+
+      # Draw text map
+    map_text = draw_text_map(map_data, item_locations, CONF)
+    # Add route paths to map
+    map_text_back = add_paths_to_map(map_text, route_back)
+    # Add axes to map for easier reading
+    map_full_back = add_axes_to_map(map_text_back, rows, cols)
+
+    warn("\nWAREHOUSE MAP\n")
+    print_map(map_full_back)
     print_instructions(route_back)
 
 
