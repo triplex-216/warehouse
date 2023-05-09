@@ -6,32 +6,11 @@ VERSION = "alpha 0.1"
 
 CONF = Config()
 
-""" Start Menu """
-
-
-def input_products_ids(conf: Config):
-    size = get_response("Input number of products", "d", 1)[0]
-    products = get_response("Products IDs", "d", size)
-
-def output_show_map(): 
-    # Read inventory data from text file
-    map_data, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
-    mock_prod_list = [(3, 4)]
-    draw_text_map(map_data, mock_prod_list, CONF)
-
-start_menu = Menu(
-    text="Start menu",
-    options=[
-        ("Show the map", lambda: output_show_map()),
-        ("Products? ", lambda: input_products_ids(CONF)),
-    ],
-)
-
 """ Settings Menu """
 
 
 def input_config_random(conf: Config):
-    bool_random = get_response("Want it random? ", "b", 1)
+    bool_random = get_user_input("Want it random? ", "b", 1)
     conf.random_item = bool_random
     print(f"Set random item to {bool_random[0]}")
 
@@ -46,11 +25,27 @@ settings_menu = Menu(
 
 """ Main Menu """
 
+def start_routing():
+    # Read inventory data from text file
+    map_data, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
+
+    item_count = get_user_input("How many items would you like to fetch? ", "d", 1)[0]
+    item_ids = get_user_input(
+        "Please input IDs of the items you wish to add to list", "d", item_count
+    )
+
+    mock_item_list = [19699] # Use a specific item during development phase
+
+    # item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
+    item_locations = get_item_locations(product_db=prod_db, id_list=mock_item_list)
+
+    draw_text_map(map_data, item_locations, CONF)
+
 
 main_menu = Menu(
     text=f"Warehouse Navigator {VERSION}",
     options=[
-        ("Start", start_menu),
+        ("Start", start_routing),
         ("Settings", settings_menu),
         ("Exit", None),
     ],

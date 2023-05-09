@@ -58,8 +58,8 @@ class Menu:
                 next_action.enter()
             elif callable(next_action):
                 # If option is bound to a function
-                res = next_action()  # Propagate function return upwards
-                break
+                res = next_action()  # Propagate last function return upwards
+                continue # Stays in the menu
             else:
                 # If the option's next menu is None, exit current menu
                 break
@@ -67,7 +67,7 @@ class Menu:
         return res
 
 
-def get_response(text: str, form: str, count: int):
+def get_user_input(text: str, form: str, count: int):
     """
     Prompt user for input. Format and count can be specified.
 
@@ -86,18 +86,19 @@ def get_response(text: str, form: str, count: int):
 
     match form:
         case "d":
-            form_description = "Integer"
+            form_description = "integer"
         case "f":
-            form_description = "Any number"
+            form_description = "number"
         case "s":
-            form_description = "Text"
+            form_description = "text"
         case "b":
             form_description = "Y/N"
 
     print(text)
     for c in range(count):
         while True:  # Re-prompt for input if fails
-            res = input(f"{form_description} ({c+1}/{count})")
+            print(f"> {form_description}, {c+1}/{count}")
+            res = input(f"> ")
             if res == "q" or res == "Q":
                 return -1
 
