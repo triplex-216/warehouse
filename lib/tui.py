@@ -20,16 +20,18 @@ class Menu:
         res = 0
 
         while True:
+            option_exit = len(self.options) + 1
             # Print text and options
             print(self.text)
             for idx, o in enumerate(self.options):
                 print(f"{idx + 1}. {o[0]}")
+            print(f"{option_exit}. Exit menu")
 
             # Get user input
             user_option = input("> ")
 
-            # If user entered "q", exit immediately
-            if user_option == "q" or user_option == "Q":
+            # If user entered exit code or "q", exit immediately
+            if user_option in [str(option_exit), "q", "Q"]:
                 return 0
 
             # Convert user input to integer
@@ -68,6 +70,8 @@ class Menu:
 
 
 """ Input/Ouput """
+
+
 def get_user_input(text: str, form: str, count: int):
     """
     Prompt user for input. Format and count can be specified.
@@ -130,6 +134,7 @@ def get_user_input(text: str, form: str, count: int):
 
     return res_list
 
+
 def warn(text=""):
     """
     Print a line of text in bold text
@@ -142,6 +147,7 @@ def debug(text=""):
     Print a line of text with [DEBUG]
     """
     print(f"[DEBUG] {text}")
+
 
 """ Text map """
 

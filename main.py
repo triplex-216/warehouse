@@ -55,6 +55,10 @@ def start_routing():
             item_ids[idx] = random_item_id
             debug(f"Item {i} does not exist, replacing it with {random_item_id}! ")
 
+    # DEBUG FEATURE
+    # Limit to 1 item
+    item_ids = item_ids[:1]
+
     item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
     route = find_route(map=map_data, start=CONF.worker_position, end=item_locations[0])
     route_back = find_route(map=map_data, start=route[-1], end=CONF.worker_position)
@@ -79,7 +83,6 @@ main_menu = Menu(
     options=[
         ("Start", start_routing),
         ("Settings", settings_menu),
-        ("Exit", None),
     ],
 )
 
