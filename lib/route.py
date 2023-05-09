@@ -85,9 +85,13 @@ def show_route(route):
         if new_instruction == instruction:
             dis += 1
         else:
-            print(f"from {start} move {dis} step {instruction} to {(pos[1], pos[0])}")
+            print(
+                f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {(pos[1], pos[0])}"
+            )
             instruction = new_instruction
             start = pos
             dis = 1
-    print(f"from {start} move {dis} step {instruction} to {(next_pos[1], next_pos[0])}")
-    print("pick up the product!")
+    print(
+        f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {(next_pos[1], next_pos[0])}"
+    )
+    print("Pick up the product!")
