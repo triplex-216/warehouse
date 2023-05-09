@@ -22,7 +22,7 @@ class Menu:
         while True:
             option_exit = len(self.options) + 1
             # Print text and options
-            print(self.text)
+            warn(self.text)
             for idx, o in enumerate(self.options):
                 print(f"{idx + 1}. {o[0]}")
             print(f"{option_exit}. Exit menu")
