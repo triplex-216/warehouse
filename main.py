@@ -39,6 +39,7 @@ def start_routing(conf: Config):
     map_data, prod_db = read_inventory_data(DATASET)
     rows, cols = len(map_data), len(map_data[0])
 
+    warn("Only the first item will be added to the list(alpha release only)")
     item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[0]
     item_ids = input_data_as_list(
         "Please input IDs of the items you wish to add to list", "d", item_count
