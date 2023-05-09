@@ -1,6 +1,7 @@
 import argparse
 from lib.tui import *
 from lib.core import *
+from lib.route import *
 
 VERSION = "alpha 0.1"
 
@@ -29,17 +30,20 @@ def start_routing():
     # Read inventory data from text file
     map_data, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
 
-    item_count = get_user_input("How many items would you like to fetch? ", "d", 1)[0]
-    item_ids = get_user_input(
-        "Please input IDs of the items you wish to add to list", "d", item_count
-    )
+    # item_count = get_user_input("How many items would you like to fetch? ", "d", 1)[0]
+    # item_ids = get_user_input(
+    #     "Please input IDs of the items you wish to add to list", "d", item_count
+    # )
 
-    mock_item_list = [19699] # Use a specific item during development phase
+    mock_item_list = [571] # Use a specific item during development phase
 
     # item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
     item_locations = get_item_locations(product_db=prod_db, id_list=mock_item_list)
 
     draw_text_map(map_data, item_locations, CONF)
+
+    route = find_route(map=map_data, start=CONF.worker_position, end=item_locations[0])
+    show_route(route)
 
 
 main_menu = Menu(
