@@ -8,8 +8,8 @@ DEFAULT_COLS = 40
 
 
 class Config:
-    def __init__(self, random_item=False) -> None:
-        self.random_item = random_item
+    def __init__(self, use_random_item) -> None:
+        self.use_random_item = use_random_item
         self.worker_position = (0, 0)
 
 

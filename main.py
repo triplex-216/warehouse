@@ -6,7 +6,9 @@ from lib.route import *
 
 VERSION = "alpha 0.1"
 
-CONF = Config()
+CONF = Config(
+    use_random_item=True,
+)
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 
 
@@ -14,15 +16,17 @@ DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 
 
 def input_config_random(conf: Config):
-    bool_random = get_user_input("Want it random? ", "b", 1)
-    conf.random_item = bool_random
+    bool_random = get_user_input(
+        "Do you want to use a random item when inputted ID is invalid? ", "b", 1
+    )
+    conf.use_random_item = bool_random
     print(f"Set random item to {bool_random[0]}")
 
 
 settings_menu = Menu(
     text="Settings menu",
     options=[
-        ("Random?", lambda: input_config_random(CONF)),
+        ("Randomize item", lambda: input_config_random(CONF)),
     ],
 )
 
@@ -30,7 +34,7 @@ settings_menu = Menu(
 """ Main Menu """
 
 
-def start_routing():
+def start_routing(conf: Config):
     # Read inventory data from text file
     map_data, prod_db = read_inventory_data(DATASET)
     rows, cols = len(map_data), len(map_data[0])
@@ -42,18 +46,19 @@ def start_routing():
 
     # DEBUG FEATURE
     # Pick random item when specified item ID does not exist
-    valid_ids = list(prod_db.keys())
-    # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
-    for idx, i in enumerate(item_ids):
-        if i not in valid_ids:
-            # Replace invalid ID with random item
-            random_item_id = item_ids[0]
-            while (
-                random_item_id in item_ids
-            ):  # Avoid duplicate ID; chance is extremely low
-                random_item_id = choice(valid_ids)
-            item_ids[idx] = random_item_id
-            debug(f"Item {i} does not exist, replacing it with {random_item_id}! ")
+    if conf.use_random_item:
+        valid_ids = list(prod_db.keys())
+        # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
+        for idx, i in enumerate(item_ids):
+            if i not in valid_ids:
+                # Replace invalid ID with random item
+                random_item_id = item_ids[0]
+                while (
+                    random_item_id in item_ids
+                ):  # Avoid duplicate ID; chance is extremely low
+                    random_item_id = choice(valid_ids)
+                item_ids[idx] = random_item_id
+                debug(f"Item {i} does not exist, replacing it with {random_item_id}! ")
 
     # DEBUG FEATURE
     # Limit to 1 item
@@ -81,7 +86,7 @@ def start_routing():
 main_menu = Menu(
     text=f"Warehouse Navigator {VERSION}",
     options=[
-        ("Start", start_routing),
+        ("Start", lambda: start_routing(conf=CONF)),
         ("Settings", settings_menu),
     ],
 )
