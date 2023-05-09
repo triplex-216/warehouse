@@ -16,7 +16,7 @@ DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 
 
 def input_config_random(conf: Config):
-    bool_random = get_user_input(
+    bool_random = input_data_as_list(
         "Do you want to use a random item when inputted ID is invalid? ", "b", 1
     )
     conf.use_random_item = bool_random[0]
@@ -39,8 +39,10 @@ def start_routing(conf: Config):
     map_data, prod_db = read_inventory_data(DATASET)
     rows, cols = len(map_data), len(map_data[0])
 
-    item_count = get_user_input("How many items would you like to fetch? ", "d", 1)[0]
-    item_ids = get_user_input(
+    item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[
+        0
+    ]
+    item_ids = input_data_as_list(
         "Please input IDs of the items you wish to add to list", "d", item_count
     )
 
@@ -58,7 +60,9 @@ def start_routing(conf: Config):
                 ):  # Avoid duplicate ID; chance is extremely low
                     random_item_id = choice(valid_ids)
                 item_ids[idx] = random_item_id
-                warn(f"Item #{i} does not exist, replacing it with Item #{random_item_id}! ")
+                warn(
+                    f"Item #{i} does not exist, replacing it with Item #{random_item_id}! "
+                )
 
     # DEBUG FEATURE
     # Limit to 1 item
