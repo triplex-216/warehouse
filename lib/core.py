@@ -8,9 +8,9 @@ DEFAULT_COLS = 40
 
 
 class Config:
-    def __init__(self, use_random_item) -> None:
+    def __init__(self, use_random_item=False, origin_position=(0, 0)) -> None:
         self.use_random_item = use_random_item
-        self.worker_position = (0, 0)
+        self.origin_position = origin_position
 
 
 """ Data processing """

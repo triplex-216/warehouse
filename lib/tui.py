@@ -137,6 +137,10 @@ def input_data_as_list(text: str, form: str, count: int) -> list:
     return res_list
 
 
+def bold_text(text=""):
+    return f"\033[1m{text}\033[0m"
+
+
 def warn(text=""):
     """
     Print a line of text in bold text
@@ -155,18 +159,11 @@ def debug(text=""):
 
 
 # Draw the text map
-def draw_text_map(
-    map_data: list[list[int]], pd_list: list[tuple[int, int]], config: Config
-):
+def draw_text_map(map_data: list[list[int]]):
     # Initialize ASCII map buffer
     cols, rows = len(map_data[0]), len(map_data)
     # Preserve 1 row & 1 col for axes
     map_text = [["__"] * (cols) for r in range(rows)]
-
-    # Set worker position
-    worker_x = config.worker_position[0]
-    worker_y = config.worker_position[1]
-    map_text[worker_x][worker_y] = "WK"
 
     for r in range(rows):
         for c in range(cols):
@@ -174,13 +171,6 @@ def draw_text_map(
             # (obstacles) in ASCII map
             if map_data[r][c] == 1:
                 map_text[r][c] = "**"
-
-    # Mark destination shelves where products need to be fetched
-    # from as "SH"
-    for pd in pd_list:
-        r = pd[0]
-        c = pd[1]
-        map_text[r][c] = "SH"
 
     return map_text
 
@@ -212,7 +202,17 @@ def add_axes_to_map(map_text, rows, cols):
 
 
 # Show the detailed route on the text map
-def add_paths_to_map(map_text, paths):
+def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False):
+    # Set source position (worker)
+    src_x, src_y = paths[0][0], paths[0][1]
+    map_text[src_x][src_y] = bold_text("WK")
+
+    # Set all items' shelves
+    for pd in pd_list:
+        r = pd[0]
+        c = pd[1]
+        map_text[r][c] = bold_text("SH")
+
     for i in range(1, len(paths)):
         c1 = paths[i - 1]
         c2 = paths[i]
@@ -220,18 +220,23 @@ def add_paths_to_map(map_text, paths):
         while c1[0] != c2[0]:
             if c1[0] < c2[0]:
                 c1 = (c1[0] + 1, c1[1])
-                map_text[c1[0]][c1[1]] = "^^"
+                map_text[c1[0]][c1[1]] = bold_text("^^")
             else:
                 c1 = (c1[0] - 1, c1[1])
-                map_text[c1[0]][c1[1]] = "vv"
+                map_text[c1[0]][c1[1]] = bold_text("vv")
 
         while c1[1] != c2[1]:
             if c1[1] < c2[1]:
                 c1 = (c1[0], c1[1] + 1)
-                map_text[c1[0]][c1[1]] = ">>"
+                map_text[c1[0]][c1[1]] = bold_text(">>")
             else:
                 c1 = (c1[0], c1[1] - 1)
-                map_text[c1[0]][c1[1]] = "<<"
+                map_text[c1[0]][c1[1]] = bold_text("<<")
+
+    # If going back to origin, mark origin as "OR"
+    if back:
+        dest_x, dest_y = paths[-1][0], paths[-1][1]
+        map_text[dest_x][dest_y] = bold_text("OR")  # "OR" for "origin"
 
     return map_text
 

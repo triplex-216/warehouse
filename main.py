@@ -8,6 +8,7 @@ VERSION = "alpha 0.1"
 
 CONF = Config(
     use_random_item=True,
+    origin_position=(0, 0),
 )
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 
@@ -26,7 +27,7 @@ def input_config_random(conf: Config):
 settings_menu = Menu(
     text="Settings menu",
     options=[
-        ("Randomize item", lambda: input_config_random(CONF)),
+        ("Randomize item", lambda: input_config_random(conf=CONF)),
     ],
 )
 
@@ -40,7 +41,9 @@ def start_routing(conf: Config):
     rows, cols = len(map_data), len(map_data[0])
 
     warn("Only the first item will be added to the list(alpha release only)")
-    item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[0]
+    item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[
+        0
+    ]
     item_ids = input_data_as_list(
         "Please input IDs of the items you wish to add to list", "d", item_count
     )
@@ -71,13 +74,17 @@ def start_routing(conf: Config):
         warn("The item(s) requested are not available at the moment. ")
         return -1
 
-    route = find_route(map=map_data, start=CONF.worker_position, end=item_locations[0])
-    route_back = find_route(map=map_data, start=route[-1], end=CONF.worker_position)
+    route = find_route(
+        map=map_data, start=conf.origin_position, end=item_locations[0], adjacent=True
+    )
+    route_back = find_route(
+        map=map_data, start=route[-1], end=conf.origin_position, adjacent=False
+    )  # Find route back to the origin
 
     # Draw text map
-    map_text = draw_text_map(map_data, item_locations, CONF)
+    map_text = draw_text_map(map_data)
     # Add route paths to map
-    map_text = add_paths_to_map(map_text, route)
+    map_text = add_paths_to_map(map_text, route, item_locations)
     # Add axes to map for easier reading
     map_full = add_axes_to_map(map_text, rows, cols)
 
@@ -86,10 +93,12 @@ def start_routing(conf: Config):
 
     print_instructions(route, back = False)
 
-    # Draw returntext map
-    map_text = draw_text_map(map_data, item_locations, CONF)
+    # Draw text map
+    map_text = draw_text_map(map_data)
     # Add route paths to map
-    map_text_back = add_paths_to_map(map_text, route_back)
+    map_text_back = add_paths_to_map(
+        map_text, route_back, item_locations, back=True
+    )
     # Add axes to map for easier reading
     map_full_back = add_axes_to_map(map_text_back, rows, cols)
 

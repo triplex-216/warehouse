@@ -1,7 +1,7 @@
 import heapq
 
 
-def find_route(map, start, end):
+def find_route(map, start, end, adjacent=True):
     dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
     row, col = len(map), len(map[0])
     # Initialize the distance dictionary with the starting node and a cost of 0
@@ -26,7 +26,12 @@ def find_route(map, start, end):
                 neighbors.append(neighbor)
         return neighbors
 
-    end_positions = get_neighbors(end)
+    # If find path to adjacent grids, consider all the end grid's neighbors
+    # Else only consider the end grid itself.
+    if adjacent:
+        end_positions = get_neighbors(end)
+    else:
+        end_positions = [end]
 
     while open_set:
         # Get the node with the lowest cost from the priority queue
