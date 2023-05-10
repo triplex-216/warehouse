@@ -60,27 +60,27 @@ def find_route(map, start, end, adjacent=True):
     return None
 
 
-def get_step_instruction(position, next_position):
-    """
-    get route discription of one movement
-    """
-    # get vertical direction
-    if position[0] > next_position[0]:
-        dir = "down"
-    elif position[0] < next_position[0]:
-        dir = "up"
-    elif position[1] > next_position[1]:
-        dir = "left"
-    elif position[1] < next_position[1]:
-        dir = "right"
-
-    return dir
-
-
 def print_instructions(route, back):
     """
     get instructions of a given route
     """
+
+    def get_step_instruction(position, next_position):
+        """
+        get route discription of one movement
+        """
+        # get vertical direction
+        if position[0] > next_position[0]:
+            dir = "down"
+        elif position[0] < next_position[0]:
+            dir = "up"
+        elif position[1] > next_position[1]:
+            dir = "left"
+        elif position[1] < next_position[1]:
+            dir = "right"
+
+        return dir
+
     if len(route) == 1:
         if not back:
             print("You can pick up the product at current position!")
