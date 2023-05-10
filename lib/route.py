@@ -72,12 +72,16 @@ def get_step_instruction(position, next_position):
     return dir
 
 
-def print_instructions(route):
+def print_instructions(route, back):
     """
     get instructions of a given route
     """
-    start = route[0]
-    instruction = get_step_instruction(start, route[1])
+    if len(route) == 1:
+        if not back:
+            print("You can pick up the product at current position!")
+        return
+    start, next_pos = route[0], route[1]
+    instruction = get_step_instruction(start, next_pos)
     dis = 1
     for idx in range(1, len(route) - 1):
         pos, next_pos = route[idx], route[idx + 1]
@@ -94,11 +98,7 @@ def print_instructions(route):
     print(
         f"From {(start[1], start[0])}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {(next_pos[1], next_pos[0])}"
     )
-    if route[-1] == (0, 1):
-        print("From (1, 0), move 1 step left to (0, 0)")
-        print("Return to the start position.")
-    elif route[-1] == (1, 0):
-        print("From (0, 1), move 1 step down to (0, 0)")
+    if back:
         print("Return to the start position.")
     else:
         print("Pick up the product!")

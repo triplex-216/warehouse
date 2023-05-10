@@ -83,9 +83,9 @@ def start_routing(conf: Config):
     warn("\nWAREHOUSE MAP\n")
     print_map(map_full)
 
-    print_instructions(route)
+    print_instructions(route, back = False)
 
-      # Draw text map
+    # Draw returntext map
     map_text = draw_text_map(map_data, item_locations, CONF)
     # Add route paths to map
     map_text_back = add_paths_to_map(map_text, route_back)
@@ -94,7 +94,7 @@ def start_routing(conf: Config):
 
     warn("\nWAREHOUSE MAP\n")
     print_map(map_full_back)
-    print_instructions(route_back)
+    print_instructions(route_back, back = True)
 
 
 main_menu = Menu(
