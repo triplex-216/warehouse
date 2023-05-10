@@ -131,7 +131,7 @@ def input_data_as_list(text: str, form: str, count: int) -> list:
                 break
 
             except ValueError:
-                print("Value error")
+                print("Wrong input format, please try again.")
                 continue
 
     return res_list
