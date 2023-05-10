@@ -7,9 +7,7 @@ def find_route(map, start, end, adjacent=True):
     # Initialize the distance dictionary with the starting node and a cost of 0
     distance = {start: 0}
     # Initialize the priority queue with the starting node and its cost
-    open_set = [(0, start)]
-    # Initialize the closed(visited) set as an empty set
-    closed_set = set()
+    visited_set = [(0, start)]
     # Keep track of the parent node for each node in the shortest path
     parent = {}
     route = []
@@ -33,9 +31,9 @@ def find_route(map, start, end, adjacent=True):
     else:
         end_positions = [end]
 
-    while open_set:
+    while visited_set:
         # Get the node with the lowest cost from the priority queue
-        current_node = heapq.heappop(open_set)[1]
+        current_node = heapq.heappop(visited_set)[1]
 
         if current_node in end_positions:
             while current_node in parent:
@@ -44,8 +42,6 @@ def find_route(map, start, end, adjacent=True):
             route.append(start)
             return route[::-1]
 
-        # Add the current node to the closed set
-        closed_set.add(current_node)
         # Check each neighbor of the current node
         for neighbor in get_neighbors(current_node):
             # Calculate the tentative cost to reach the neighbor
@@ -53,7 +49,7 @@ def find_route(map, start, end, adjacent=True):
             # If the neighbor is not in the open set or the tentative cost is less than the existing cost, add it to the open set
             if tentative_dis < distance.get(neighbor, float("inf")):
                 distance[neighbor] = tentative_dis
-                heapq.heappush(open_set, (tentative_dis, neighbor))
+                heapq.heappush(visited_set, (tentative_dis, neighbor))
                 parent[neighbor] = current_node
 
     # If we've exhausted all possible paths and haven't reached the end node, return None
