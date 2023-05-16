@@ -225,6 +225,13 @@ def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False
         else:
             map_text[curr[0]][curr[1]-1] = bold_text("<<")
 
+    # Change the arrow when the worker need to turn
+    for i in range(2, len(paths)):
+        curr = paths[i]
+        before = paths[i - 1]
+        if map_text[curr[0]][curr[1]] != map_text[before[0]][before[1]]:
+            map_text[before[0]][before[1]] = map_text[curr[0]][curr[1]]
+
     # If going back to origin, mark origin as "OR"
     if back:
         dest_x, dest_y = paths[-1][0], paths[-1][1]
