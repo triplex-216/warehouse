@@ -65,7 +65,7 @@ def print_instructions(route, back):
         """
         get route discription of one movement
         """
-        # get vertical direction
+        # get direction
         if position[0] > next_position[0]:
             dir = "down"
         elif position[0] < next_position[0]:
@@ -76,17 +76,20 @@ def print_instructions(route, back):
             dir = "right"
 
         return dir
-
+    # if there are only one node in the route
     if len(route) == 1:
         if not back:
             print("You can pick up the product at current position!")
         return
+    
     start, next_pos = route[0], route[1]
     instruction = get_step_instruction(start, next_pos)
     dis = 1
+
     for idx in range(1, len(route) - 1):
         pos, next_pos = route[idx], route[idx + 1]
         new_instruction = get_step_instruction(pos, next_pos)
+        # if two idr are the same
         if new_instruction == instruction:
             dis += 1
         else:
