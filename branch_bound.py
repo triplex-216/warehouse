@@ -10,7 +10,7 @@ def generate_matrix(map, pd_list):
     # Matrix index : index = i * 4 + j
     # i: product index in pd_list
     # j: 0: Up 1: Down 2: Right 3: Left
-    dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+    dir = [(0, 1), (0, -1), (1, 0), (-1, 0)]
     row, col = len(map), len(map[0])
     length = len(pd_list) * 4
     
@@ -236,6 +236,6 @@ def print_path(path):
     print(f"node {node_num[-1]} {node_dir[-1]}")
 
 map_data, _ = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
-pd_list = [(0,0), (2, 16), (4, 4), (8,4)]
+pd_list = [(0,0), (10, 6), (12, 6), (10, 14), (20, 10)]
 path, _ = find_shortest_route(map_data, pd_list)
 print_path(path)
