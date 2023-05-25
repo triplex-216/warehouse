@@ -50,7 +50,7 @@ def generate_matrix(map, pd_list):
         for j in range(len(pd_neighbors)):
             node2 = pd_neighbors[j]
             # Replace it with the function that calculate the true distance between 2 nodes
-            real_cost = cost(map, node1, node2)
+            real_cost = cost(map, node1, node2)[0]
             ori_matrix[pd_neighbors_index[i]][pd_neighbors_index[j]] = real_cost
 
     # Avoid the cost between the node and itself
@@ -61,11 +61,6 @@ def generate_matrix(map, pd_list):
             for y in range(index1, index2):
                 ori_matrix[x][y] = float("inf")
     return ori_matrix
-
-# Only for test
-def cost(map, x, y):
-    route = find_route(map, x, y)
-    return len(route)
 
 def find_minimum_row(row):
     min_value = min(row)
