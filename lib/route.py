@@ -109,15 +109,15 @@ def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, i
                 try:
                     dist, trace = graph[(current, neighbor)]
                 except KeyError:
-                    dist, trace =  graph[(neighbor, current)][0], graph[(neighbor, current)][1][::-1]
+                    dist, trace = (
+                        graph[(neighbor, current)][0],
+                        graph[(neighbor, current)][1][::-1],
+                    )
 
                 if not dist:
                     break
 
-                if (
-                    neighbor not in visited
-                    and dist < nearest_distance
-                ):
+                if neighbor not in visited and dist < nearest_distance:
                     nearest_neighbor = neighbor
                     nearest_distance = dist
                     nearest_trace = trace
@@ -169,7 +169,7 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
             dir = "right"
 
         return dir
-    
+
     def is_prod_entry(pos):
         pickup = []
         for item in items:
@@ -177,7 +177,10 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
                 pickup.append(item.id)
                 items.remove(item)
         return pickup
-    
+
+    def rev(pos: tuple[int, int]) -> tuple[int, int]:
+        return (pos[1], pos[0])
+
     # if there are only one node in the route
     if len(route) == 1:
         instruction_str += "You can pick up the product at current position!\n"
@@ -192,7 +195,7 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
         new_instruction = get_step_instruction(pos, next_pos)
         pickup = is_prod_entry(pos)
         if pickup:
-            instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
+            instruction_str += f"From {rev(start)} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(pos)}\n"
             instruction_str += f"Pick up the product {pickup}!\n"
             instruction = new_instruction
             start = pos
@@ -202,11 +205,11 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
             if new_instruction == instruction:
                 dis += 1
             else:
-                instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
+                instruction_str += f"From {rev(start)} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(pos)}\n"
                 instruction = new_instruction
                 start = pos
                 dis = 1
-    instruction_str += f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {next_pos[1]}\n"
+    instruction_str += f"From {rev(start)}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(next_pos)}\n"
     instruction_str += "Return to the start position!\n"
 
     return instruction_str
