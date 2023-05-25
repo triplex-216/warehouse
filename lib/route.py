@@ -87,7 +87,6 @@ def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, i
     """
     all_nodes = [start] + get_item_locations(prod_db, item_ids)
     items = get_item(prod_db, item_ids)
-    num_nodes = len(all_nodes)
     graph = get_graph(map, all_nodes)
 
     visited = {start}
@@ -145,6 +144,22 @@ def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, i
     print(route)
     return total_cost, route
 
+def default(map, prod_db, item_ids, start=(0, 0)):
+    total_cost = 0
+    route = []
+
+    items = get_item(prod_db, item_ids)
+    pos = start
+    for item in items:
+        dis, trace = cost(map, pos, item.neighbors()[0])
+        total_cost += dis
+        route += trace[:-1]
+        pos = item.neighbors()[0]
+    dis, trace = cost(map, pos, start)
+    total_cost += dis
+    route += trace
+    
+    return total_cost, route
 
 def get_instructions(route: list, prod_db: dict, item_ids: list):
     """
