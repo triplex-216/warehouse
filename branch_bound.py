@@ -28,7 +28,7 @@ def generate_matrix(map, pd_list):
             if (
                 neighbor[0] in range(row)
                 and neighbor[1] in range(col)
-                and map[neighbor[1]][neighbor[0]] == 0
+                and map[neighbor[0]][neighbor[1]] == 0
             ):
                 neighbors.append(neighbor)
                 neighbors_index.append(dir.index((x,y)))
@@ -50,7 +50,9 @@ def generate_matrix(map, pd_list):
         for j in range(len(pd_neighbors)):
             node2 = pd_neighbors[j]
             # Replace it with the function that calculate the true distance between 2 nodes
-            real_cost = cost(map, node1, node2)[0]
+            ret = cost(map, node1, node2)
+            real_cost = ret[0]
+            # real_cost = cost(map, node1, node2)[0]
             ori_matrix[pd_neighbors_index[i]][pd_neighbors_index[j]] = real_cost
 
     # Avoid the cost between the node and itself
@@ -246,8 +248,8 @@ def print_path(path, pd_list):
 
 
 map_data, _ = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
-# pd_list = [(0,0), (2, 0), (8, 14), (6, 6), (11, 8), (10, 6), (8, 8), (12, 10), (16, 8), (16, 4), (14, 8), (6, 14), (8, 6), (20, 14)]
-pd_list = [(0, 0), (10, 6), (10, 14), (12, 6), (20, 10)]
+pd_list = [(0,0), (2, 0), (8, 14), (6, 6), (11, 8), (10, 6), (8, 8), (12, 10), (16, 8), (16, 4), (14, 8), (6, 14), (8, 6), (20, 14)]
+# pd_list = [(0, 0), (10, 6), (10, 14), (12, 6), (20, 10)]
 path, _ = find_shortest_route(map_data, pd_list)
 
 print_path(path, pd_list)
