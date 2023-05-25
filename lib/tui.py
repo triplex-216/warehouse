@@ -163,39 +163,39 @@ def draw_text_map(map_data: list[list[int]]):
     # Initialize ASCII map buffer
     cols, rows = len(map_data[0]), len(map_data)
     # Preserve 1 row & 1 col for axes
-    map_text = [["__"] * (cols) for r in range(rows)]
+    map_text = [["__"] * (rows) for r in range(cols)]
 
     for r in range(rows):
         for c in range(cols):
             # Mark all 1's in map_data as non-destination shelves
             # (obstacles) in ASCII map
             if map_data[r][c] == 1:
-                map_text[r][c] = "**"
+                map_text[c][r] = "**"
 
     return map_text
 
 
 # Add X and Y axes to the text map
-def add_axes_to_map(map_text, rows, cols):
+def add_axes_to_map(map_text, cols, rows):
     # create a new 2D list with axis indices
-    map_with_axes = [[" " for j in range(cols + 1)] for i in range(rows + 1)]
+    map_with_axes = [[" " for j in range(rows + 1)] for i in range(cols + 1)]
 
     # add the row and column indices
     map_with_axes[0][0] = "  "
-    for i in range(rows):
-        if rows > 9:
+    for i in range(cols):
+        if cols > 9:
             map_with_axes[i + 1][0] = f"{i:02d}"
         else:
             map_with_axes[i + 1][0] = str(i)
-    for j in range(cols):
-        if cols > 9:
+    for j in range(rows):
+        if rows > 9:
             map_with_axes[0][j + 1] = f"{j:02d}"
         else:
             map_with_axes[0][j + 1] = str(j)
 
     # copy over the original list
-    for i in range(rows):
-        for j in range(cols):
+    for i in range(cols):
+        for j in range(rows):
             map_with_axes[i + 1][j + 1] = map_text[i][j]
 
     return map_with_axes
@@ -217,13 +217,13 @@ def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False
         curr = paths[i - 1]
         next = paths[i]
         if curr[0] < next[0]:
-            map_text[curr[0]+1][curr[1]] = bold_text("^^")
+            map_text[curr[0] + 1][curr[1]] = bold_text("^^")
         elif curr[0] > next[0]:
-            map_text[curr[0]-1][curr[1]] = bold_text("vv")
+            map_text[curr[0] - 1][curr[1]] = bold_text("vv")
         elif curr[1] < next[1]:
-            map_text[curr[0]][curr[1]+1] = bold_text(">>")
+            map_text[curr[0]][curr[1] + 1] = bold_text(">>")
         else:
-            map_text[curr[0]][curr[1]-1] = bold_text("<<")
+            map_text[curr[0]][curr[1] - 1] = bold_text("<<")
 
     # Change the arrow when the worker need to turn
     for i in range(2, len(paths)):
@@ -241,8 +241,12 @@ def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False
 
 
 # Print generated text maps
-def print_map(map_text: str):
+def print_map(legends: str):
     # print the new list
-    for row in reversed(map_text):
+    for row in reversed(legends):
         print(" ".join(row))
     print()  # New line
+
+    legends = f"{bold_text('SH')}: Shelf  {bold_text('WK')}: Worker  {bold_text('OR')}: Origin {bold_text('>>|^^|<<|vv')}: Directions  {bold_text('**')}: Shelf (Not a destination)  {bold_text('__')}: Empty"
+    print(legends)
+    print()

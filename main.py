@@ -104,7 +104,7 @@ def start_routing(conf: Config):
     # Add route paths to map
     map_text = add_paths_to_map(map_text, route, item_locations)
     # Add axes to map for easier reading
-    map_full = add_axes_to_map(map_text, rows, cols)
+    map_full = add_axes_to_map(map_text, cols, rows)
 
     warn("\nWAREHOUSE MAP\n")
     print_map(map_full)
@@ -117,7 +117,7 @@ def start_routing(conf: Config):
     # Add route paths to map
     map_text_back = add_paths_to_map(map_text, route_back, item_locations, back=True)
     # Add axes to map for easier reading
-    map_full_back = add_axes_to_map(map_text_back, rows, cols)
+    map_full_back = add_axes_to_map(map_text_back, cols, rows)
 
     warn("\nWAREHOUSE MAP\n")
     print_map(map_full_back)
