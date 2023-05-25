@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 from lib.core import read_inventory_data
+from lib.route import get_distance, get_neighbors
 
-_map, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
+warehouse_map, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
 
 test_order_lists = [
     [108335],
@@ -56,9 +57,16 @@ for case in test_order_lists:
     test_order_graphs.append(d)
 
 
+def manhattan_dist(a, b):
+    return ((a[0] - b[0]), (a[1] - b[1]))
+
+
 def plot_graph(nodes: dict):
     # Define the access point directions
     access_points = {"n": (0, 1), "s": (0, -1), "e": (1, 0), "w": (-1, 0)}
+    ap_reverse = dict(
+        (v, k) for k, v in access_points.items()
+    )  # Map coordinate offsets to direction strings
 
     # Create a new figure and axis
     fig, ax = plt.subplots()
@@ -93,21 +101,24 @@ def plot_graph(nodes: dict):
 
             # Calculate and display distances between each node's access point to every other node's access point
             distances_text = f"{node}-{ap_direction}: \n"
+            distances_to_aps = dict()
             for other_node, (other_x, other_y) in nodes.items():
                 if node != other_node:
-                    distances_text += f"{other_node}:\n"
-                    for other_ap_direction, (
-                        other_dx,
-                        other_dy,
-                    ) in access_points.items():
-                        other_ap_x = other_x + other_dx
-                        other_ap_y = other_y + other_dy
-                        manhattan_distance = abs(ap_x - other_ap_x) + abs(
-                            ap_y - other_ap_y
-                        )
-                        distances_text += (
-                            f"  {other_ap_direction}: {manhattan_distance}\n"
-                        )
+                    src_neighbors, dest_neighbors = get_neighbors(
+                        warehouse_map, nodes[node]
+                    ), get_neighbors(warehouse_map, nodes[other_node])
+
+                    distances = get_distance(
+                        warehouse_map, nodes[node], nodes[other_node]
+                    )
+
+                    for (src, dest), cost in distances.items():
+                        if src in src_neighbors and dest in dest_neighbors:
+                            distances_to_aps[
+                                f"{other_node}-{ap_reverse[manhattan_dist(dest,nodes[other_node])]}"
+                            ] = cost
+            for dest, cost in distances_to_aps.items():
+                distances_text += f"{dest}: {cost}\n"
 
             ax.annotate(
                 distances_text,
@@ -132,5 +143,6 @@ def plot_graph(nodes: dict):
 
 
 if __name__ == "__main__":
-    for g in test_order_graphs: 
-        plot_graph(g)
+    plot_graph(test_order_graphs[1])
+    # for g in test_order_graphs:
+    #     plot_graph(g)
