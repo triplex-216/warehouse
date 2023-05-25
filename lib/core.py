@@ -17,11 +17,28 @@ class Config:
 
 
 class Prod:
-    def __init__(self, id: int, x: int, y: int) -> None:
+    def __init__(self, id: int, x: int, y: int, _map) -> None:
         self.id, self.x, self.y = id, x, y
+        self._neighbors = (
+            []
+        )  # initialized with an empty list and will be updated after the first call of get_neighbors
+        self._map = _map
 
     def get_location(self):
         return (self.x, self.y)
+
+    def get_neighbors(self):
+        dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        row, col = len(self._map), len(self._map[0])
+        for d_x, d_y in dir:
+            neighbor = (self.x + d_x, self.y + d_y)
+            if (
+                neighbor[0] in range(row)
+                and neighbor[1] in range(col)
+                and self._map[neighbor[0]][neighbor[1]] == 0
+            ):
+                self.neighbors.append(neighbor)
+        return self.neighbors
 
 
 # Read data from the file
@@ -62,9 +79,9 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
     map_data = [[0] * rows for _ in range(cols)]
 
     for i, r, c in zip(id, row, col):
-        prod_db[i] = Prod(id=i, x=c, y=r)
         # Set all shelves to 1
         map_data[c][r] = 1
+        prod_db[i] = Prod(id=i, x=c, y=r, _map=map_data)
 
     return map_data, prod_db
 
