@@ -1,5 +1,61 @@
 import heapq
 
+def get_neighbors(map, node):
+    dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+    row, col = len(map), len(map[0])
+    neighbors = []
+    for x, y in dir:
+        neighbor = (node[0] + x, node[1] + y)
+        if (
+            neighbor[0] in range(row)
+            and neighbor[1] in range(col)
+            and map[neighbor[0]][neighbor[1]] == 0
+        ):
+            neighbors.append(neighbor)
+    return neighbors
+
+def cost(map, start, end):
+    """
+    calculate distance between two single node
+    """
+    # Initialize the distance dictionary with the starting node and a cost of 0
+    distance = {start: 0}
+    # Initialize the priority queue with the starting node and its cost
+    visited_set = [(0, start)]
+    while visited_set:
+        # Get the node with the lowest cost from the priority queue
+        current_node = heapq.heappop(visited_set)[1]
+
+        if current_node == end:
+            return distance[current_node]
+
+        # Check each neighbor of the current node
+        for neighbor in get_neighbors(map, current_node):
+            # Calculate the tentative cost to reach the neighbor
+            tentative_dis = distance[current_node] + 1
+            # If the neighbor is not in the open set or the tentative cost is less than the existing cost, add it to the open set
+            if tentative_dis < distance.get(neighbor, float("inf")):
+                distance[neighbor] = tentative_dis
+                heapq.heappush(visited_set, (tentative_dis, neighbor))
+    
+
+def get_distance(map, start_node, end_node):
+    dis = {}
+    if end_node == (0,0):
+        end_positions = [end_node]
+    else:
+        end_positions = get_neighbors(map, end_node)
+    
+    if start_node == (0,0):
+        start_positions = [start_node]
+    else:
+        start_positions = get_neighbors(map, start_node)
+
+    for start in start_positions:
+        for end in end_positions:
+            dis[(start, end)] = cost(map, start, end)
+
+    return dis
 
 def find_route(map, start, end, adjacent=True):
     dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
@@ -55,6 +111,14 @@ def find_route(map, start, end, adjacent=True):
     # If we've exhausted all possible paths and haven't reached the end node, return None
     return None
 
+def greedy(map, start, items):
+    """
+    give a list of item to be fetched, return the greedy route
+    """
+    graph = get_graph(map, items)
+    while items:
+
+    pass
 
 def print_instructions(route, back):
     """
@@ -94,13 +158,13 @@ def print_instructions(route, back):
             dis += 1
         else:
             print(
-                f"From {(start[1], start[0])} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {(pos[1], pos[0])}"
+                f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}"
             )
             instruction = new_instruction
             start = pos
             dis = 1
     print(
-        f"From {(start[1], start[0])}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {(next_pos[1], next_pos[0])}"
+        f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {next_pos[1]}"
     )
     if back:
         print("Return to the start position.")
