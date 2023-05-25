@@ -163,39 +163,39 @@ def draw_text_map(map_data: list[list[int]]):
     # Initialize ASCII map buffer
     cols, rows = len(map_data[0]), len(map_data)
     # Preserve 1 row & 1 col for axes
-    map_text = [["__"] * (rows) for r in range(cols)]
+    map_text = [["__"] * (cols) for r in range(rows)]
 
     for r in range(rows):
         for c in range(cols):
             # Mark all 1's in map_data as non-destination shelves
             # (obstacles) in ASCII map
             if map_data[r][c] == 1:
-                map_text[c][r] = "**"
+                map_text[r][c] = "**"
 
     return map_text
 
 
 # Add X and Y axes to the text map
-def add_axes_to_map(map_text, cols, rows):
+def add_axes_to_map(map_text, rows, cols):
     # create a new 2D list with axis indices
-    map_with_axes = [[" " for j in range(rows + 1)] for i in range(cols + 1)]
+    map_with_axes = [[" " for j in range(cols + 1)] for i in range(rows + 1)]
 
     # add the row and column indices
     map_with_axes[0][0] = "  "
-    for i in range(cols):
-        if cols > 9:
+    for i in range(rows):
+        if rows > 9:
             map_with_axes[i + 1][0] = f"{i:02d}"
         else:
             map_with_axes[i + 1][0] = str(i)
-    for j in range(rows):
-        if rows > 9:
+    for j in range(cols):
+        if cols > 9:
             map_with_axes[0][j + 1] = f"{j:02d}"
         else:
             map_with_axes[0][j + 1] = str(j)
 
     # copy over the original list
-    for i in range(cols):
-        for j in range(rows):
+    for i in range(rows):
+        for j in range(cols):
             map_with_axes[i + 1][j + 1] = map_text[i][j]
 
     return map_with_axes

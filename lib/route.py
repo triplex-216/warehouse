@@ -2,21 +2,6 @@ import heapq
 from .core import get_item, get_item_locations
 
 
-def get_neighbors(map, node):
-    dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-    row, col = len(map), len(map[0])
-    neighbors = []
-    for x, y in dir:
-        neighbor = (node[0] + x, node[1] + y)
-        if (
-            neighbor[0] in range(row)
-            and neighbor[1] in range(col)
-            and map[neighbor[0]][neighbor[1]] == 0
-        ):
-            neighbors.append(neighbor)
-    return neighbors
-
-
 def cost(map, start, end):
     """
     calculate distance between two single node
@@ -96,7 +81,7 @@ def get_graph(map, nodes):
     return graph
 
 
-def greedy(map, prod_db, item_ids, start=(0, 0)):
+def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, int]]]:
     """
     give a list of item to be fetched, return the greedy route
     """
@@ -124,15 +109,15 @@ def greedy(map, prod_db, item_ids, start=(0, 0)):
                 try:
                     dist, trace = graph[(current, neighbor)]
                 except KeyError:
-                    dist, trace =  graph[(neighbor, current)][0], graph[(neighbor, current)][1][::-1]
+                    dist, trace = (
+                        graph[(neighbor, current)][0],
+                        graph[(neighbor, current)][1][::-1],
+                    )
 
                 if not dist:
                     break
 
-                if (
-                    neighbor not in visited
-                    and dist < nearest_distance
-                ):
+                if neighbor not in visited and dist < nearest_distance:
                     nearest_neighbor = neighbor
                     nearest_distance = dist
                     nearest_trace = trace
@@ -160,10 +145,8 @@ def greedy(map, prod_db, item_ids, start=(0, 0)):
     print(route)
     return total_cost, route
 
-def default(map, prod_db, item_ids, start=(0, 0)):
-    pass
 
-def get_instructions(route: list, prod_db:dict, item_ids: list):
+def get_instructions(route: list, prod_db: dict, item_ids: list):
     """
     get instructions of a given route
     """
@@ -186,7 +169,7 @@ def get_instructions(route: list, prod_db:dict, item_ids: list):
             dir = "right"
 
         return dir
-    
+
     def is_prod_entry(pos):
         pickup = []
         for item in items:
@@ -194,7 +177,10 @@ def get_instructions(route: list, prod_db:dict, item_ids: list):
                 pickup.append(item.id)
                 items.remove(item)
         return pickup
-    
+
+    def rev(pos: tuple[int, int]) -> tuple[int, int]:
+        return (pos[1], pos[0])
+
     # if there are only one node in the route
     if len(route) == 1:
         instruction_str += "You can pick up the product at current position!\n"
@@ -209,7 +195,7 @@ def get_instructions(route: list, prod_db:dict, item_ids: list):
         new_instruction = get_step_instruction(pos, next_pos)
         pickup = is_prod_entry(pos)
         if pickup:
-            instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
+            instruction_str += f"From {rev(start)} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(pos)}\n"
             instruction_str += f"Pick up the product {pickup}!\n"
             instruction = new_instruction
             start = pos
@@ -219,11 +205,34 @@ def get_instructions(route: list, prod_db:dict, item_ids: list):
             if new_instruction == instruction:
                 dis += 1
             else:
-                instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
+                instruction_str += f"From {rev(start)} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(pos)}\n"
                 instruction = new_instruction
                 start = pos
                 dis = 1
-    instruction_str += f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {next_pos[1]}\n"
+    instruction_str += f"From {rev(start)}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(next_pos)}\n"
     instruction_str += "Return to the start position!\n"
 
     return instruction_str
+
+
+def bb(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, int]]]:
+    pass
+
+
+def fallback(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, int]]]:
+    pass
+
+
+def find_route(map, prod_db, start, item_ids, algorithm="g"):
+    if algorithm == "b":  # branch and bound
+        total_cost, route = bb(map=map, prod_db=prod_db, item_ids=item_ids, start=start)
+    elif algorithm == "g":  # greedy
+        total_cost, route = greedy(
+            map=map, prod_db=prod_db, item_ids=item_ids, start=start
+        )
+    elif algorithm == "f":  # fallback
+        total_cost, route = fallback(
+            map=map, prod_db=prod_db, item_ids=item_ids, start=start
+        )
+
+    return route
