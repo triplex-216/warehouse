@@ -177,8 +177,10 @@ def single_path(ori_reduced_matrix, start_index, single_start):
     return path, path_cost
 
 # Find the shortest path from a random start node's all possible neighbors
-def find_shortest_route(map, pd_list):
-    
+def branch_and_bound(map, pd_list):
+    drift = []
+    node_num = []
+    coord_route = []
     # Get ori_matrix
     ori_matrix = generate_matrix(map, pd_list)
     
@@ -207,50 +209,35 @@ def find_shortest_route(map, pd_list):
     # Total cost
     total_cost = main_reduced_cost + shortest_path_cost
 
-    return shortest_path, total_cost
-
-# Print the detailed path direction
-def print_path(path, pd_list):
-    node_num = []
-    node_dir = []
-    drift = []
-    for i in range(len(path)):
-        node_num.append(path[i] // 4)
-        x = path[i] % 4
+    for i in range(len(shortest_path)):
+        node_num.append(shortest_path[i] // 4)
+        x = shortest_path[i] % 4
         if x == 0:
-            node_dir.append("South")
             drift.append([0, -1])
         elif x == 1:
-            node_dir.append("North")
             drift.append([0, 1])
         elif x == 2:
-            node_dir.append("West")
             drift.append([-1, 0])
         elif x == 3:
-            node_dir.append("East")
             drift.append([1, 0])
-
-    for i in range(len(path) - 1):
-        print(f"node {node_num[i]} {node_dir[i]} -->", end='')
     
-    print(f"node {node_num[-1]} {node_dir[-1]}")
     
-    coord_route = []
-    for i in range(len(path)):
+    for i in range(len(shortest_path)):
         x = pd_list[node_num[i]][0] + drift[i][0]
         y = pd_list[node_num[i]][1] + drift[i][1]
+
+        if (x,y) == (1,0) or (x,y) == (0,1):
+            coord_route.append((0, 0))
+
         coord_route.append((x,y))
 
-    for i in range(len(path) - 1):
-        print(f"{coord_route[i]} --> ", end='')
-
-    print(f"{coord_route[-1]}")
+    return total_cost, coord_route
 
 
-map_data, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
-pd_list = [(0,0), (2, 0), (8, 14), (6, 6), (11, 8), (10, 6), (8, 8), (12, 10), (16, 8), (16, 4), (14, 8), (6, 14), (8, 6), (20, 14)]
-# pd_list = [(0, 0), (10, 6), (10, 14), (12, 6), (20, 10)]
-path, _ = find_shortest_route(map_data, pd_list)
+# map_data, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
+# pd_list = [(0,0), (2, 0), (8, 14), (6, 6), (11, 8), (10, 6), (8, 8), (12, 10), (16, 8), (16, 4), (14, 8), (6, 14), (8, 6), (20, 14)]
+# # pd_list = [(0, 0), (10, 6), (10, 14), (12, 6), (20, 10)]
+# path, _ = find_shortest_route(map_data, pd_list)
 # distance, route = path_to_route(map_data, path)
 # print(f"Total distance is {distance}.")
 # print(get_instructions(route, prod_db, pd_list))
