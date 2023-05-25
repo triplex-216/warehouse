@@ -247,9 +247,10 @@ def print_path(path, pd_list):
     print(f"{coord_route[-1]}")
 
 
-map_data, _ = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
+map_data, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
 pd_list = [(0,0), (2, 0), (8, 14), (6, 6), (11, 8), (10, 6), (8, 8), (12, 10), (16, 8), (16, 4), (14, 8), (6, 14), (8, 6), (20, 14)]
 # pd_list = [(0, 0), (10, 6), (10, 14), (12, 6), (20, 10)]
 path, _ = find_shortest_route(map_data, pd_list)
-
-print_path(path, pd_list)
+# distance, route = path_to_route(map_data, path)
+# print(f"Total distance is {distance}.")
+# print(get_instructions(route, prod_db, pd_list))

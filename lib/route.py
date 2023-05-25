@@ -33,6 +33,7 @@ def cost(map, start, end):
                 heapq.heappush(visited_set, (tentative_dis, neighbor))
                 parent[neighbor] = current_node
 
+    return -1
 
 def get_neighbors(map, node):
     neighbors = []
@@ -145,20 +146,26 @@ def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, i
     return total_cost, route
 
 def default(map, prod_db, item_ids, start=(0, 0)):
+    items = get_item(prod_db, item_ids)
+    path = [start]
+    for item in items:
+        path.append(item.neighbors()[0])
+    path.append(start)
+    return path_to_route(map, path)
+
+def path_to_route(map, path):
+    """
+    Transfer path to route with every passed node contained
+    """
     total_cost = 0
     route = []
-
-    items = get_item(prod_db, item_ids)
-    pos = start
-    for item in items:
-        dis, trace = cost(map, pos, item.neighbors()[0])
+    pos = path[0]
+    for next_pos in path[1:]:
+        dis, trace = cost(map, pos, next_pos)
         total_cost += dis
         route += trace[:-1]
-        pos = item.neighbors()[0]
-    dis, trace = cost(map, pos, start)
-    total_cost += dis
-    route += trace
-    
+        pos = next_pos
+
     return total_cost, route
 
 def get_instructions(route: list, prod_db: dict, item_ids: list):
