@@ -91,7 +91,7 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
     for i, r, c in zip(id, row, col):
         # Set all shelves to 1
         map_data[r][c] = 1
-        prod_db[i] = Prod(id=i, x=r, y=c, _map=map_data)
+        prod_db[i] = Prod(id=i, x=c, y=r, _map=map_data)
 
     return map_data, prod_db
 
