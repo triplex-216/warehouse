@@ -1,5 +1,6 @@
 .vscode
 reference
+reports
 
 __pycache__/
 *.py[cod]

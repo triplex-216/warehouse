@@ -1,13 +1,17 @@
 import argparse
+import datetime
+import os
 from random import choice
 from lib.tui import *
 from lib.core import *
 from lib.route import *
+from lib.misc import *
 
-VERSION = "alpha 0.1"
+VERSION = "beta 0.2"
 
 CONF = Config(
     use_random_item=True,
+    save_instructions=True,
     origin_position=(0, 0),
 )
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
@@ -24,10 +28,24 @@ def input_config_random(conf: Config):
     print(f"Set random item to {bool_random[0]}")
 
 
+def input_config_save_instructions(conf: Config):
+    bool_save_instructions = input_data_as_list(
+        "Do you want to save all directions as a text file for future reference? ",
+        "b",
+        1,
+    )
+    conf.save_instructions = bool_save_instructions[0]
+    print(f"Set save instructions to {bool_save_instructions[0]}")
+
+
 settings_menu = Menu(
     text="Settings menu",
     options=[
         ("Randomize item", lambda: input_config_random(conf=CONF)),
+        (
+            "Save instructions to text file",
+            lambda: input_config_save_instructions(conf=CONF),
+        ),
     ],
 )
 
@@ -91,20 +109,31 @@ def start_routing(conf: Config):
     warn("\nWAREHOUSE MAP\n")
     print_map(map_full)
 
-    print_instructions(route, back = False)
+    instr = get_instructions(route, back=False)
+    print(instr)
 
     # Draw text map
     map_text = draw_text_map(map_data)
     # Add route paths to map
-    map_text_back = add_paths_to_map(
-        map_text, route_back, item_locations, back=True
-    )
+    map_text_back = add_paths_to_map(map_text, route_back, item_locations, back=True)
     # Add axes to map for easier reading
     map_full_back = add_axes_to_map(map_text_back, rows, cols)
 
     warn("\nWAREHOUSE MAP\n")
     print_map(map_full_back)
-    print_instructions(route_back, back = True)
+    instr_back = get_instructions(route_back, back=True)
+    print(instr_back)
+
+    # Create the directory "reports" if it does not exist yet
+    if not os.path.exists("reports"):
+        os.makedirs("reports")
+
+    # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
+    # and append .txt extension
+    save_to_file(
+        f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
+        gen_instruction_metadata() + instr + "\n" + instr_back,
+    )
 
 
 main_menu = Menu(

@@ -8,8 +8,11 @@ DEFAULT_COLS = 40
 
 
 class Config:
-    def __init__(self, use_random_item=False, origin_position=(0, 0)) -> None:
+    def __init__(
+        self, use_random_item=False, save_instructions=False, origin_position=(0, 0)
+    ) -> None:
         self.use_random_item = use_random_item
+        self.save_instructions = save_instructions
         self.origin_position = origin_position
 
 
@@ -84,6 +87,7 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
 
     return map_data, prod_db
 
+
 def get_item(product_db: dict, id_list: list) -> list[Prod]:
     prod_list = []
     for id in id_list:
@@ -94,6 +98,6 @@ def get_item(product_db: dict, id_list: list) -> list[Prod]:
 
     return prod_list
 
-def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
 
+def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
     return [item.get_location() for item in get_item(product_db, id_list)]
