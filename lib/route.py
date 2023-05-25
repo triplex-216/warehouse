@@ -1,5 +1,4 @@
 import heapq
-import copy
 from .core import get_item, get_item_locations
 
 
@@ -33,12 +32,11 @@ def cost(map, start, end):
         current_node = heapq.heappop(visited_set)[1]
 
         if current_node == end:
-            dist = distance[current_node]
             while current_node in parent:
                 route.append(current_node)
                 current_node = parent[current_node]
             route.append(start)
-            return (dist, route[::-1])
+            return (len(route), route[::-1])
 
         # Check each neighbor of the current node
         for neighbor in get_neighbors(map, current_node):
@@ -116,43 +114,39 @@ def greedy(map, prod_db, item_ids, start=(0, 0)):
     parent = {}
     parent[start] = start
 
-    for item in items:
-        all_neighbors += [item.neighbors()]
-
-    orig_neighbors = copy.deepcopy(all_neighbors)
-
-    while len(path) < num_nodes:
+    while items:
         current = path[-1]
         nearest_neighbor = None
         nearest_distance = float("inf")
 
-        for neighbor_group in all_neighbors:
-            for neighbor in neighbor_group:
+        for item in items:
+            for neighbor in item.neighbors():
                 try:
-                    dist, trace = graph[(current, neighbor)] if graph[(current, neighbor)] else graph[(neighbor, current)]
+                    dist, trace = graph[(current, neighbor)]
                 except KeyError:
-                    pass
+                    dist, trace =  graph[(neighbor, current)][0], graph[(neighbor, current)][1][::-1]
 
                 if not dist:
                     break
 
                 if (
                     neighbor not in visited
-                    and neighbor not in get_neighbors(map, parent[current])
                     and dist < nearest_distance
                 ):
                     nearest_neighbor = neighbor
                     nearest_distance = dist
-                    nearest_neighbor_group = neighbor_group
+                    nearest_trace = trace
 
         if nearest_neighbor is not None:
             path.append(nearest_neighbor)
-            route += trace[:-1]
-            total_cost += dist
+            route += nearest_trace[:-1]
+            total_cost += nearest_distance
             visited.add(nearest_neighbor)
-            i = orig_neighbors.index(nearest_neighbor_group)
-            parent[nearest_neighbor] = all_nodes[i+1]
-            all_neighbors.remove(nearest_neighbor_group)
+            # i = orig_neighbors.index(nearest_neighbor_group)
+            # parent[nearest_neighbor] = all_nodes[i+1]
+            for item in items:
+                if nearest_neighbor in item.neighbors():
+                    items.remove(item)
         else:
             # No unvisited neighbors found, the graph might be disconnected
             break
@@ -163,7 +157,11 @@ def greedy(map, prod_db, item_ids, start=(0, 0)):
 
     path.append(start)
     print(path)
+    print(route)
     return total_cost, route
+
+def default(map, prod_db, item_ids, start=(0, 0)):
+    pass
 
 def get_instructions(route: list, prod_db:dict, item_ids: list):
     """
@@ -171,7 +169,6 @@ def get_instructions(route: list, prod_db:dict, item_ids: list):
     """
 
     instruction_str = ""
-    all_neighbors = {}
     items = get_item(prod_db, item_ids)
 
     def get_step_instruction(position, next_position):
@@ -189,7 +186,15 @@ def get_instructions(route: list, prod_db:dict, item_ids: list):
             dir = "right"
 
         return dir
-
+    
+    def is_prod_entry(pos):
+        pickup = []
+        for item in items:
+            if pos in item.neighbors():
+                pickup.append(item.id)
+                items.remove(item)
+        return pickup
+    
     # if there are only one node in the route
     if len(route) == 1:
         instruction_str += "You can pick up the product at current position!\n"
@@ -201,21 +206,23 @@ def get_instructions(route: list, prod_db:dict, item_ids: list):
 
     for idx in range(1, len(route) - 1):
         pos, next_pos = route[idx], route[idx + 1]
-        for item in items:
-            if next_pos in item.neighbors():
-                instruction_str += f"Pick up the product!\n"
-                items.remove(item)
-                break
-
         new_instruction = get_step_instruction(pos, next_pos)
-        # if two idr are the same
-        if new_instruction == instruction:
-            dis += 1
-        else:
+        pickup = is_prod_entry(pos)
+        if pickup:
             instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
+            instruction_str += f"Pick up the product {pickup}!\n"
             instruction = new_instruction
             start = pos
             dis = 1
+        else:
+            # if two idr are the same
+            if new_instruction == instruction:
+                dis += 1
+            else:
+                instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
+                instruction = new_instruction
+                start = pos
+                dis = 1
     instruction_str += f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {next_pos[1]}\n"
     instruction_str += "Return to the start position!\n"
 
