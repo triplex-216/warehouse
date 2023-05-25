@@ -6,36 +6,6 @@ nodes = {"A": (4, 5), "B": (6, 3), "C": (2, 7), "D": (8, 2), "E": (10, 4)}
 # Define the access point directions
 access_points = {"n": (0, 1), "s": (0, -1), "e": (1, 0), "w": (-1, 0)}
 
-# Create a dictionary to store the distances between access points
-access_point_distances = {}
-
-# Create a dictionary to store the access points of each node
-node_access_points = {}
-
-# Initialize access point distances and node access points
-for node, (x, y) in nodes.items():
-    node_access_points[node] = {}
-    for ap_direction, (dx, dy) in access_points.items():
-        ap_x = x + dx
-        ap_y = y + dy
-        node_access_points[node][ap_direction] = (ap_x, ap_y)
-
-# Calculate distances between access points of different nodes
-for node1, aps1 in node_access_points.items():
-    access_point_distances[node1] = {}
-    for node2, aps2 in node_access_points.items():
-        if node1 != node2:
-            access_point_distances[node1][node2] = {}
-            for ap1_direction, ap1_coords in aps1.items():
-                shortest_distance = float("inf")
-                for ap2_direction, ap2_coords in aps2.items():
-                    dx = ap2_coords[0] - ap1_coords[0]
-                    dy = ap2_coords[1] - ap1_coords[1]
-                    distance = abs(dx) + abs(dy)
-                    if distance < shortest_distance:
-                        shortest_distance = distance
-                access_point_distances[node1][node2][ap1_direction] = shortest_distance
-
 # Create a new figure and axis
 fig, ax = plt.subplots()
 
@@ -51,22 +21,40 @@ for node, (x, y) in nodes.items():
         va="center",
     )
 
-    distances_text = ""
-    for other_node, ap_distances in access_point_distances[node].items():
-        shortest_distance = float("inf")
-        for ap1_direction, distance in ap_distances.items():
-            if distance < shortest_distance:
-                shortest_distance = distance
-        distances_text += f"{other_node}: {shortest_distance}\n"
+    # Draw the access points as smaller nodes and display the texts beside them
+    for ap_direction, (dx, dy) in access_points.items():
+        ap_x = x + dx
+        ap_y = y + dy
+        ap_text = f"{node}-{ap_direction}"
+        ax.scatter(ap_x, ap_y, color="white", edgecolor="black", s=200)
+        ax.annotate(
+            ap_text,
+            (ap_x, ap_y),
+            textcoords="offset points",
+            xytext=(0, 0),
+            ha="center",
+            va="center",
+        )
 
-    ax.annotate(
-        distances_text,
-        (x, y),
-        textcoords="offset points",
-        xytext=(30, -10),
-        ha="left",
-        fontsize=8,
-    )
+        # Calculate and display distances between each node's access point to every other node's access point
+        distances_text = ""
+        for other_node, (other_x, other_y) in nodes.items():
+            if node != other_node:
+                distances_text += f"{other_node}:\n"
+                for other_ap_direction, (other_dx, other_dy) in access_points.items():
+                    other_ap_x = other_x + other_dx
+                    other_ap_y = other_y + other_dy
+                    manhattan_distance = abs(ap_x - other_ap_x) + abs(ap_y - other_ap_y)
+                    distances_text += f"  {other_ap_direction}: {manhattan_distance}\n"
+
+        ax.annotate(
+            distances_text,
+            (ap_x, ap_y),
+            textcoords="offset points",
+            xytext=(20, 0),
+            ha="left",
+            fontsize=8,
+        )
 
 # Set axis limits and labels
 ax.set_xlim(0, 12)
@@ -75,5 +63,5 @@ ax.set_xticks([])
 ax.set_yticks([])
 
 # Set the title and display the graph
-ax.set_title("Shortest Distances Between Node Access Points")
+ax.set_title("Distances between Node Access Points")
 plt.show()
