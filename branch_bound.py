@@ -2,6 +2,7 @@
 import numpy as np
 import random
 from lib.core import *
+from lib.route import *
 
 
 # generate original cost matrix
@@ -9,14 +10,14 @@ def generate_matrix(map, pd_list):
 
     # Matrix index : index = i * 4 + j
     # i: product index in pd_list
-    # j: 0: Up 1: Down 2: Right 3: Left
-    dir = [(0, 1), (0, -1), (1, 0), (-1, 0)]
+    # j: 0: South 1: North 2: West 3: East
+    dir = [(0, -1), (0, 1), (-1, 0), (1, 0)]
     row, col = len(map), len(map[0])
     length = len(pd_list) * 4
     
     # Set all original costs to -1
     # If there exist neighbor, replace it with real cost calculated later
-    ori_matrix = np.ones((length, length), dtype = int) * -1
+    ori_matrix = np.ones((length, length)) * float("inf")
     
     # Find neighbors
     def find_neighbors(node):
@@ -27,7 +28,7 @@ def generate_matrix(map, pd_list):
             if (
                 neighbor[0] in range(row)
                 and neighbor[1] in range(col)
-                and map[neighbor[0]][neighbor[1]] == 0
+                and map[neighbor[1]][neighbor[0]] == 0
             ):
                 neighbors.append(neighbor)
                 neighbors_index.append(dir.index((x,y)))
@@ -42,91 +43,85 @@ def generate_matrix(map, pd_list):
         for j in neighbors_index:
             index = i * 4 + j
             pd_neighbors_index.append(index)
-    
+
     # Replace with real cost
     for i in range(len(pd_neighbors)):
         node1 = pd_neighbors[i]
         for j in range(len(pd_neighbors)):
             node2 = pd_neighbors[j]
             # Replace it with the function that calculate the true distance between 2 nodes
-            real_cost = cost(node1, node2)
+            real_cost = cost(map, node1, node2)
             ori_matrix[pd_neighbors_index[i]][pd_neighbors_index[j]] = real_cost
 
     # Avoid the cost between the node and itself
-    np.fill_diagonal(ori_matrix, -1)
-
+    for i in range(len(pd_list)):
+        index1 = i * 4
+        index2 = (i + 1) * 4
+        for x in range(index1, index2):
+            for y in range(index1, index2):
+                ori_matrix[x][y] = float("inf")
     return ori_matrix
 
 # Only for test
-def cost(x,y):
-    return abs(x[0] - y[0]) + abs(x[1] - y[1])
+def cost(map, x, y):
+    route = find_route(map, x, y)
+    return len(route)
 
-def find_minimum_row_positive(row):
-    min_positive = None
+def find_minimum_row(row):
+    min_value = min(row)
     
-    for num in row:
-        if (num > 0 or num == 0) and (min_positive is None or num < min_positive):
-            min_positive = num
-    
-    # avoid return None
-    if min_positive == None:
-        min_positive = 0
+    # avoid return infinity
+    if min_value == float("inf"):
+        min_value = 0
 
-    return min_positive
+    return min_value
 
-def find_minimum_col_positive(matrix, column_index):
-    min_positive = None
+def find_minimum_col(matrix, column_index):
+    min_value = float("inf")
 
     for row in matrix:
-        num = row[column_index]
-        if (num > 0 or num == 0) and (min_positive is None or num < min_positive):
-            min_positive = num
+        if row[column_index] < min_value:
+            min_value = row[column_index]
 
-    # avoid return None
-    if min_positive == None:
-        min_positive = 0
-
-    return min_positive
+     # avoid return infinity
+    if min_value == float("inf"):
+        min_value = 0
+    return min_value
 
 # Calculate the reduced cost of the input matrix
 def reduced_cost(matrix):
           
     [rows, cols] = matrix.shape
-
+    
+    row_matrix = np.copy(matrix)
     row_cost =[]
-    row_matrix = None
     for i in range(rows):
-        value = find_minimum_row_positive(matrix[i])
-        single_row = matrix[i] - value
+        value = find_minimum_row(row_matrix[i])
+        row_matrix[i] -= value
         row_cost.append(value)
 
-        if row_matrix is None:
-            row_matrix = single_row
-        else:
-            row_matrix = np.vstack((row_matrix, single_row))
-  
-
-    reduced_matrix = row_matrix
+    reduced_matrix = np.copy(row_matrix)
     col_cost = []
     for i in range(cols):
-        value = find_minimum_col_positive(reduced_matrix, i)
+        value = find_minimum_col(reduced_matrix, i)
         col_cost.append(value)
-        if value != 0:
-            for row in reduced_matrix:
-                row[i] -= value
+        #if value != 0:
+        for row in reduced_matrix:
+            row[i] -= value
     
     return sum(row_cost) + sum(col_cost), reduced_matrix
 
 # Calculate the value of (node1, node2) + ReducedCost(node1, node2)
 def nodes_cost(matrix, current, x):
     value = matrix[current][x]
-    
-    # Set it to all negative
-    matrix[current, :] = -1  # Set entire row to -1
-    matrix[:, x] = -1  # Set entire column to -1
+    # Make a copy of the matrix
+    copy_matrix = np.copy(matrix)
+    # Set it to all infinity
+    copy_matrix[current, :] = float("inf")
+    copy_matrix[:, x] = float("inf")
 
     # Get reduce_cost between two nodes
-    reduce_cost, _ = reduced_cost(matrix)
+    reduce_cost, _ = reduced_cost(copy_matrix)
 
     return reduce_cost + value
 
@@ -141,14 +136,14 @@ def single_path(ori_reduced_matrix, start_index, single_start):
     
     # Remove invalid index
     for i in range(len(ori_reduced_matrix)):
-        if np.all(copy_matrix[i, :] < 0):
+        if np.all(copy_matrix[i, :] == float("inf")):
             unvisited.remove(i)
         # Remove other start_index
         elif i in start_index and i != single_start:
             unvisited.remove(i)
-            # Set it to all negative
-            copy_matrix[i, :] = -1  # Set entire row to -1
-            copy_matrix[:, i] = -1  # Set entire column to -1
+            # Set it to all infinity
+            copy_matrix[i, :] = float("inf")  
+            copy_matrix[:, i] = float("inf")  
     
     current = single_start
     path = [current]
@@ -163,16 +158,20 @@ def single_path(ori_reduced_matrix, start_index, single_start):
         # Update the path_cost
         path_cost += nodes_cost(copy_matrix, current, nearest)
         # Update the copy_matrix
-        copy_matrix[current, :] = -1
+        copy_matrix[current, :] = float("inf")
+        copy_matrix[:, nearest] = float("inf")
 
         # Remove nearest node's neighbors
         i = nearest // 4
         for j in range(4):
-            if i * 4 + j in unvisited:
-                unvisited.remove(i * 4 +j)
+            neighbor_index = i * 4 + j
+            if neighbor_index in unvisited and neighbor_index != nearest:
+                unvisited.remove(i * 4 + j)
                 # Update the copy_matrix
-                copy_matrix[:, i * 4 + j] = -1
-
+                copy_matrix[i * 4 + j, :] = float("inf")
+                copy_matrix[:, i * 4 + j] = float("inf")
+        
+        unvisited.remove(nearest)
         current = nearest
 
     # Return to the original start
@@ -188,7 +187,7 @@ def find_shortest_route(map, pd_list):
     
     # Get ori_reduced_matrix and reduced cost(main)
     main_reduced_cost, ori_reduced_matrix = reduced_cost(ori_matrix)
-    
+
     pd_id = len(pd_list)
     # Set a random start point
     start = random.randint(0, pd_id - 1)
@@ -196,7 +195,7 @@ def find_shortest_route(map, pd_list):
     start_index = []
     for i in range(4):
         row_index = start * 4 + i
-        if np.any(ori_reduced_matrix[row_index, :] >= 0):
+        if min(ori_reduced_matrix[row_index, :]) == 0:
             start_index.append(row_index) 
     
     # Get shortest path
@@ -214,28 +213,46 @@ def find_shortest_route(map, pd_list):
     return shortest_path, total_cost
 
 # Print the detailed path direction
-def print_path(path):
+def print_path(path, pd_list):
     node_num = []
     node_dir = []
+    drift = []
     for i in range(len(path)):
         node_num.append(path[i] // 4)
         x = path[i] % 4
-        # 0: Up 1: Down 2: Right 3: Left
         if x == 0:
-            node_dir.append("North")
-        elif x == 1:
             node_dir.append("South")
+            drift.append([0, -1])
+        elif x == 1:
+            node_dir.append("North")
+            drift.append([0, 1])
         elif x == 2:
-            node_dir.append("East")
-        elif x == 3:
             node_dir.append("West")
+            drift.append([-1, 0])
+        elif x == 3:
+            node_dir.append("East")
+            drift.append([1, 0])
 
     for i in range(len(path) - 1):
         print(f"node {node_num[i]} {node_dir[i]} -->", end='')
     
     print(f"node {node_num[-1]} {node_dir[-1]}")
+    
+    coord_route = []
+    for i in range(len(path)):
+        x = pd_list[node_num[i]][0] + drift[i][0]
+        y = pd_list[node_num[i]][1] + drift[i][1]
+        coord_route.append((x,y))
+
+    for i in range(len(path) - 1):
+        print(f"{coord_route[i]} --> ", end='')
+
+    print(f"{coord_route[-1]}")
+
 
 map_data, _ = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
-pd_list = [(0,0), (10, 6), (12, 6), (10, 14), (20, 10)]
+# pd_list = [(0,0), (2, 0), (8, 14), (6, 6), (11, 8), (10, 6), (8, 8), (12, 10), (16, 8), (16, 4), (14, 8), (6, 14), (8, 6), (20, 14)]
+pd_list = [(0, 0), (10, 6), (10, 14), (12, 6), (20, 10)]
 path, _ = find_shortest_route(map_data, pd_list)
-print_path(path)
+
+print_path(path, pd_list)
