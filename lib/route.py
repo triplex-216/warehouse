@@ -111,14 +111,14 @@ def find_route(map, start, end, adjacent=True):
     # If we've exhausted all possible paths and haven't reached the end node, return None
     return None
 
-def greedy(map, start, items):
-    """
-    give a list of item to be fetched, return the greedy route
-    """
-    graph = get_graph(map, items)
-    while items:
+# def greedy(map, start, items):
+#     """
+#     give a list of item to be fetched, return the greedy route
+#     """
+#     graph = get_graph(map, items)
+#     while items:
 
-    pass
+#     pass
 
 def print_instructions(route, back):
     """
