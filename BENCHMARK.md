@@ -35,3 +35,10 @@ This document describes the setup and inputs used during tests, as well as the r
 Peak memory usage: 41548 KiB (40.57 MiB)
 
 Note: Greedy algorithm does not necessarily produce the optimal route, however it can easily meet the 15-seconds time constraint of the application. 
+
+# Test Case Reference Graph
+![Test Case #1](figures/Figure_1.png)
+![Test Case #2](figures/Figure_2.png)
+![Test Case #3](figures/Figure_3.png)
+![Test Case #4](figures/Figure_4.png)
+![Test Case #5](figures/Figure_5.png)
