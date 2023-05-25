@@ -25,31 +25,31 @@ TEST_CASES = [
         103313,
         1,
     ],
-    # [
-    #     633,
-    #     1321,
-    #     3401,
-    #     5329,
-    #     10438,
-    #     372539,
-    #     396879,
-    #     16880,
-    #     208660,
-    #     105912,
-    #     332555,
-    #     227534,
-    #     68048,
-    #     188856,
-    #     736830,
-    #     736831,
-    #     479020,
-    #     103313,
-    #     1,
-    #     20373,
-    # ],
+    [
+        633,
+        1321,
+        3401,
+        5329,
+        10438,
+        372539,
+        396879,
+        16880,
+        208660,
+        105912,
+        332555,
+        227534,
+        68048,
+        188856,
+        736830,
+        736831,
+        479020,
+        103313,
+        1,
+        20373,
+    ],
 ]
 DEFAULT_REPS = (
-    1  # Default repetitions to test each algorithm and calculate an average time
+    10  # Default repetitions to test each algorithm and calculate an average time
 )
 
 
@@ -95,11 +95,17 @@ if __name__ == "__main__":
     m = get_peak_mem()
 
     # report phase
+    print("\nTest Report: \n============\n")
     print(f"Average execution time of branch and bound: ")
     for idx, t in enumerate(bab_times):
         print(f"Size={len(TEST_CASES[idx])}: {t:.6f} seconds ({TEST_CASES[idx]})")
     print(f"Average execution time of greedy: ")
     for idx, t in enumerate(greedy_times):
         print(f"Size={len(TEST_CASES[idx])}: {t:.6f} seconds ({TEST_CASES[idx]})")
-    
+
+    print("\nComparison: ")
+    print("Size\t|B&B\t|Greedy")  # Header
+    for idx, t in enumerate(zip(bab_times, greedy_times)):
+        print(f"{len(TEST_CASES[idx])}\t|{t[0]:.3f}s\t|{t[1]:.3f}s")
+
     print(f"Peak memory usage: {m}")
