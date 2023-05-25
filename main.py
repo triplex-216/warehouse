@@ -126,7 +126,7 @@ def start_routing(conf: Config):
     # Add route paths to map
     map_text = add_paths_to_map(map_text, route, item_locations)
     # Add axes to map for easier reading
-    map_full = add_axes_to_map(map_text, cols, rows)
+    map_full = add_axes_to_map(map_text, rows, cols)
 
     warn("\nWAREHOUSE MAP\n")
     print_map(map_full)
