@@ -85,7 +85,6 @@ def start_routing(conf: Config):
     map_data, prod_db = read_inventory_data(DATASET)
     rows, cols = len(map_data), len(map_data[0])
 
-    warn("Only the first item will be added to the list(alpha release only)")
     item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[
         0
     ]
@@ -108,10 +107,6 @@ def start_routing(conf: Config):
                     random_item_id = choice(valid_ids)
                 item_ids[idx] = random_item_id
                 debug(f"Item {i} does not exist, replacing it with {random_item_id}! ")
-
-    # DEBUG FEATURE
-    # Limit to 1 item
-    item_ids = item_ids[:1]
 
     item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
 
