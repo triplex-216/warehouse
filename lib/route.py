@@ -1,4 +1,6 @@
 import heapq
+import copy
+from .core import get_item, get_item_locations
 
 
 def get_neighbors(map, node):
@@ -41,7 +43,26 @@ def cost(map, start, end):
                 heapq.heappush(visited_set, (tentative_dis, neighbor))
 
 
+def get_neighbors(map, node):
+    neighbors = []
+    dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+    row, col = len(map), len(map[0])
+    for d_x, d_y in dir:
+        neighbor = (node[0] + d_x, node[1] + d_y)
+        if (
+            neighbor[0] in range(row)
+            and neighbor[1] in range(col)
+            and map[neighbor[0]][neighbor[1]] == 0
+        ):
+            neighbors.append(neighbor)
+
+    return neighbors
+
+
 def get_distance(map, start_node, end_node):
+    """
+    get the distance between all accessible entries of two products
+    """
     dis = {}
     if end_node == (0, 0):
         end_positions = [end_node]
@@ -60,6 +81,77 @@ def get_distance(map, start_node, end_node):
     return dis
 
 
+def get_graph(map, nodes):
+    distance = {}
+    for i in range(len(nodes)):
+        for j in range(i + 1, len(nodes)):
+            dis = get_distance(map, nodes[i], nodes[j])
+            distance = {**distance, **dis}
+    return distance
+
+
+def greedy(map, prod_db, item_ids, start=(0, 0)):
+    """
+    give a list of item to be fetched, return the greedy route
+    """
+    all_nodes = [start] + get_item_locations(prod_db, item_ids)
+    items = get_item(prod_db, item_ids)
+    num_nodes = len(all_nodes)
+    graph = get_graph(map, all_nodes)
+
+    visited = {start}
+    path = [start]
+
+    all_neighbors = []
+    parent = {}
+    parent[start] = start
+
+    for item in items:
+        all_neighbors += [item.neighbors()]
+
+    orig_neighbors = copy.deepcopy(all_neighbors)
+
+    while len(path) < num_nodes:
+        current = path[-1]
+        nearest_neighbor = None
+        nearest_distance = float("inf")
+
+        for neighbor_group in all_neighbors:
+            for neighbor in neighbor_group:
+                try:
+                    dist = graph[(current, neighbor)] if graph[(current, neighbor)] else graph[(neighbor, current)]
+                except KeyError:
+                    pass
+
+                if not dist:
+                    break
+
+                if (
+                    neighbor not in visited
+                    and neighbor not in get_neighbors(map, parent[current])
+                    and dist < nearest_distance
+                ):
+                    nearest_neighbor = neighbor
+                    nearest_distance = dist
+                    nearest_neighbor_group = neighbor_group
+
+        if nearest_neighbor is not None:
+            path.append(nearest_neighbor)
+            visited.add(nearest_neighbor)
+            i = orig_neighbors.index(nearest_neighbor_group)
+            parent[nearest_neighbor] = all_nodes[i+1]
+            all_neighbors.remove(nearest_neighbor_group)
+        else:
+            # No unvisited neighbors found, the graph might be disconnected
+            break
+
+    # Add the start node to complete the cycle
+    path.append(start)
+
+    return path
+
+
+
 def find_route(map, start, end, adjacent=True):
     dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
     row, col = len(map), len(map[0])
@@ -70,23 +162,10 @@ def find_route(map, start, end, adjacent=True):
     # Keep track of the parent node for each node in the shortest path
     parent = {}
     route = []
-
-    def get_neighbors(node):
-        neighbors = []
-        for x, y in dir:
-            neighbor = (node[0] + x, node[1] + y)
-            if (
-                neighbor[0] in range(row)
-                and neighbor[1] in range(col)
-                and map[neighbor[0]][neighbor[1]] == 0
-            ):
-                neighbors.append(neighbor)
-        return neighbors
-
     # If find path to adjacent grids, consider all the end grid's neighbors
     # Else only consider the end grid itself.
     if adjacent:
-        end_positions = get_neighbors(end)
+        end_positions = get_neighbors(map, end)
     else:
         end_positions = [end]
 
@@ -102,7 +181,7 @@ def find_route(map, start, end, adjacent=True):
             return route[::-1]
 
         # Check each neighbor of the current node
-        for neighbor in get_neighbors(current_node):
+        for neighbor in get_neighbors(map, current_node):
             # Calculate the tentative cost to reach the neighbor
             tentative_dis = distance[current_node] + 1
             # If the neighbor is not in the open set or the tentative cost is less than the existing cost, add it to the open set

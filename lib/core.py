@@ -22,25 +22,28 @@ class Config:
 class Prod:
     def __init__(self, id: int, x: int, y: int, _map) -> None:
         self.id, self.x, self.y = id, x, y
-        # initialized with an empty list and will be updated after the first call of get_neighbors
-        self._neighbors = []
+        
+        # the product's neighbors; initialized with an empty list and will be updated after the first call of get_neighbors
+        self._neigh = []
+        # reference to the map from which this product instance was created
         self._map = _map
 
     def get_location(self):
         return (self.x, self.y)
 
-    def get_neighbors(self):
-        dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-        row, col = len(self._map), len(self._map[0])
-        for d_x, d_y in dir:
-            neighbor = (self.x + d_x, self.y + d_y)
-            if (
-                neighbor[0] in range(row)
-                and neighbor[1] in range(col)
-                and self._map[neighbor[0]][neighbor[1]] == 0
-            ):
-                self.neighbors.append(neighbor)
-        return self.neighbors
+    def neighbors(self):
+        if not self._neigh:
+            dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+            row, col = len(self._map), len(self._map[0])
+            for d_x, d_y in dir:
+                neighbor = (self.x + d_x, self.y + d_y)
+                if (
+                    neighbor[0] in range(row)
+                    and neighbor[1] in range(col)
+                    and self._map[neighbor[0]][neighbor[1]] == 0
+                ):
+                    self._neigh.append(neighbor)
+        return self._neigh
 
 
 # Read data from the file
