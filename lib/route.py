@@ -458,7 +458,7 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
         cnt += len(pickup)
         if pickup:
             instruction_str += f"From {rev(start)} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(pos)}\n"
-            instruction_str += f"Pick up the product {pickup}, totally {cnt} products are picked!\n"
+            instruction_str += f"Pick up the product {pickup}!\n"
             instruction = new_instruction
             start = pos
             dis = 1
