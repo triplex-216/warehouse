@@ -143,6 +143,6 @@ def plot_graph(nodes: dict):
 
 
 if __name__ == "__main__":
-    plot_graph(test_order_graphs[1])
-    # for g in test_order_graphs:
-    #     plot_graph(g)
+    # plot_graph(test_order_graphs[1])
+    for g in test_order_graphs:
+        plot_graph(g)
