@@ -19,9 +19,8 @@ class Config:
 class Prod:
     def __init__(self, id: int, x: int, y: int, _map) -> None:
         self.id, self.x, self.y = id, x, y
-        self._neighbors = (
-            []
-        )  # initialized with an empty list and will be updated after the first call of get_neighbors
+        # initialized with an empty list and will be updated after the first call of get_neighbors
+        self._neighbors = []
         self._map = _map
 
     def get_location(self):
@@ -85,13 +84,16 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
 
     return map_data, prod_db
 
-
-def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
+def get_item(product_db: dict, id_list: list) -> list[Prod]:
     prod_list = []
     for id in id_list:
         try:
-            prod_list.append((product_db[id].x, product_db[id].y))
+            prod_list.append(product_db[id])
         except KeyError:
             print(f"Item {id} not found, skipping...")
 
     return prod_list
+
+def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
+
+    return [item.get_location() for item in get_item(product_db, id_list)]
