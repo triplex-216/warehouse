@@ -381,8 +381,6 @@ def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, i
     total_cost += graph[(start, path[-1])][0]
 
     path.append(start)
-    print(path)
-    print(route)
     return total_cost, route
 
 def default(map, prod_db, item_ids, start=(0, 0)):
@@ -489,5 +487,5 @@ def find_route(map, prod_db, start, item_ids, algorithm="g"):
         total_cost, route = default(
             map=map, prod_db=prod_db, item_ids=item_ids, start=start
         )
-
-    return route
+    
+    return total_cost, route

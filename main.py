@@ -114,7 +114,7 @@ def start_routing(conf: Config):
         warn("The item(s) requested are not available at the moment. ")
         return -1
 
-    route = find_route(
+    total_cost, route = find_route(
         map=map_data,
         prod_db=prod_db,
         start=conf.origin_position,
@@ -130,9 +130,13 @@ def start_routing(conf: Config):
 
     warn("\nWAREHOUSE MAP\n")
     print_map(map_full)
-
+    algs = {
+        "b": "Branch and bound",
+        "g": "Greedy",
+    }
     instr = get_instructions(route=route, prod_db=prod_db, item_ids=item_ids)
     print(instr)
+    print(f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm.")
 
     # TODO respect settings
     # Create the directory "reports" if it does not exist yet
