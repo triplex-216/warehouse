@@ -10,10 +10,14 @@
   Initial release. 
 
 ## Get Started
-This application requires `Python` 3.10+. No extra package installations are needed. 
+This application requires `Python` 3.10+ and `numpy`. 
 
-To run the application: 
+To run the application:
 ```bash
+$ cd path-to-binary
+$ ./main-linux
+
+# Or if Python is installed on the machine
 $ python main.py
 ```
 ## Features

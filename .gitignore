@@ -2,6 +2,10 @@
 reference
 reports
 
+# PyInstaller
+build
+# dist
+
 __pycache__/
 *.py[cod]
 *$py.class
