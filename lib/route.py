@@ -175,11 +175,11 @@ def single_path(ori_reduced_matrix, start_index, single_start):
     return path, path_cost
 
 # Find the shortest path from a random start node's all possible neighbors
-def branch_and_bound(map, prod_db, id_list, start = (0,0)):
+def branch_and_bound(map, prod_db, item_ids, start = (0,0)):
     drift = []
     node_num = []
     coord_route = []
-    locations = [start] + get_item_locations(prod_db, id_list)
+    locations = [start] + get_item_locations(prod_db, item_ids)
     # Get ori_matrix
     ori_matrix = generate_matrix(map, locations)
     
@@ -238,7 +238,9 @@ def branch_and_bound(map, prod_db, id_list, start = (0,0)):
         final_path = coord_route[index:-1] + coord_route[:index]
         final_path.append((0,0))
 
-    return total_cost, final_path
+    total_cost, route = path_to_route(map, final_path)
+
+    return total_cost, route
 
 def cost(map, start, end):
     """
