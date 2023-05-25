@@ -1,5 +1,6 @@
 import heapq
 
+
 def get_neighbors(map, node):
     dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
     row, col = len(map), len(map[0])
@@ -13,6 +14,7 @@ def get_neighbors(map, node):
         ):
             neighbors.append(neighbor)
     return neighbors
+
 
 def cost(map, start, end):
     """
@@ -37,16 +39,16 @@ def cost(map, start, end):
             if tentative_dis < distance.get(neighbor, float("inf")):
                 distance[neighbor] = tentative_dis
                 heapq.heappush(visited_set, (tentative_dis, neighbor))
-    
+
 
 def get_distance(map, start_node, end_node):
     dis = {}
-    if end_node == (0,0):
+    if end_node == (0, 0):
         end_positions = [end_node]
     else:
         end_positions = get_neighbors(map, end_node)
-    
-    if start_node == (0,0):
+
+    if start_node == (0, 0):
         start_positions = [start_node]
     else:
         start_positions = get_neighbors(map, start_node)
@@ -56,6 +58,7 @@ def get_distance(map, start_node, end_node):
             dis[(start, end)] = cost(map, start, end)
 
     return dis
+
 
 def find_route(map, start, end, adjacent=True):
     dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
@@ -111,6 +114,7 @@ def find_route(map, start, end, adjacent=True):
     # If we've exhausted all possible paths and haven't reached the end node, return None
     return None
 
+
 # def greedy(map, start, items):
 #     """
 #     give a list of item to be fetched, return the greedy route
@@ -120,10 +124,13 @@ def find_route(map, start, end, adjacent=True):
 
 #     pass
 
-def print_instructions(route, back):
+
+def get_instructions(route, back):
     """
     get instructions of a given route
     """
+
+    instruction_str = ""
 
     def get_step_instruction(position, next_position):
         """
@@ -140,12 +147,13 @@ def print_instructions(route, back):
             dir = "right"
 
         return dir
+
     # if there are only one node in the route
     if len(route) == 1:
         if not back:
-            print("You can pick up the product at current position!")
+            instruction_str += "You can pick up the product at current position!\n"
         return
-    
+
     start, next_pos = route[0], route[1]
     instruction = get_step_instruction(start, next_pos)
     dis = 1
@@ -157,16 +165,14 @@ def print_instructions(route, back):
         if new_instruction == instruction:
             dis += 1
         else:
-            print(
-                f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}"
-            )
+            instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
             instruction = new_instruction
             start = pos
             dis = 1
-    print(
-        f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {next_pos[1]}"
-    )
+    instruction_str += f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {next_pos[1]}\n"
     if back:
-        print("Return to the start position.")
+        instruction_str += "Return to the start position.\n"
     else:
-        print("Pick up the product!")
+        instruction_str += "Pick up the product!\n"
+
+    return instruction_str
