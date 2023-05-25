@@ -1,6 +1,11 @@
 # Warehouse Navigator
 
 ## Release Note
+- **Beta 0.2** (05/25/2023)
+  - Support order lists of multiple items. 
+  - Add branch-and-bound algorithm. 
+  - Visual improvements. 
+
 - **Alpha 0.1** (05/10/2023)
   Initial release. 
 
@@ -16,6 +21,3 @@ $ python main.py
   - Add number along axes for better readability. 
   - Highlight paths with arrows. 
 - Step-by-step instruction in English. 
-
-## Bugs & Caveats
-1. Currently, fetching more than one item at a time is not supported. This limit will be lifted in future stable releases. 
