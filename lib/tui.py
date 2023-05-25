@@ -213,17 +213,19 @@ def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False
         c = pd[1]
         map_text[r][c] = bold_text("SH")
 
-    for i in range(1, len(paths)):
-        curr = paths[i - 1]
-        next = paths[i]
-        if curr[0] < next[0]:
-            map_text[curr[0] + 1][curr[1]] = bold_text("^^")
-        elif curr[0] > next[0]:
-            map_text[curr[0] - 1][curr[1]] = bold_text("vv")
-        elif curr[1] < next[1]:
-            map_text[curr[0]][curr[1] + 1] = bold_text(">>")
-        else:
-            map_text[curr[0]][curr[1] - 1] = bold_text("<<")
+    # for i in range(1, len(paths)):
+    #     curr = paths[i - 1]
+    #     next = paths[i]
+    #     if curr[0] < next[0]:
+    #         map_text[curr[0] + 1][curr[1]] = bold_text("^^")
+    #     elif curr[0] > next[0]:
+    #         map_text[curr[0] - 1][curr[1]] = bold_text("vv")
+    #     elif curr[1] < next[1]:
+    #         map_text[curr[0]][curr[1] + 1] = bold_text(">>")
+    #     else:
+    #         map_text[curr[0]][curr[1] - 1] = bold_text("<<")
+    for curr in paths:
+        map_text[curr[0]][curr[1]] = bold_text("##")
 
     # Change the arrow when the worker need to turn
     for i in range(2, len(paths)):
@@ -247,6 +249,6 @@ def print_map(legends: str):
         print(" ".join(row))
     print()  # New line
 
-    legends = f"{bold_text('SH')}: Shelf  {bold_text('WK')}: Worker  {bold_text('OR')}: Origin {bold_text('>>|^^|<<|vv')}: Directions  {bold_text('**')}: Shelf (Not a destination)  {bold_text('__')}: Empty"
+    legends = f"{bold_text('SH')}: Shelf  {bold_text('WK')}: Worker  {bold_text('OR')}: Origin {bold_text('##')}: Routes  {bold_text('**')}: Shelf (Not a destination)  {bold_text('__')}: Empty"
     print(legends)
     print()
