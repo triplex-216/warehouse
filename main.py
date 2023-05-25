@@ -12,6 +12,7 @@ VERSION = "beta 0.2"
 CONF = Config(
     use_random_item=True,
     save_instructions=True,
+    default_algorithm="g",
     origin_position=(0, 0),
 )
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
@@ -38,6 +39,28 @@ def input_config_save_instructions(conf: Config):
     print(f"Set save instructions to {bool_save_instructions[0]}")
 
 
+def input_default_algorithm(conf: Config):
+    algs = {
+        "b": "Branch and bound",
+        "g": "Greedy",
+    }
+
+    str_default_algorithm = input_data_as_list(
+        "Choose a default algorithm of your choice (b/g)\nb - branch and bound; g - greedy",
+        "s",
+        1,
+    )[0]
+    while str_default_algorithm not in algs.keys():
+        print(f"Please choose a valid option from b/g")
+        str_default_algorithm = input_data_as_list(
+            "Choose a default algorithm of your choice (b/g)\nb - branch and bound; g - greedy",
+            "s",
+            1,
+        )[0]
+    conf.default_algorithm = str_default_algorithm
+    print(f"Set default algorithm to {algs[str_default_algorithm]}")
+
+
 settings_menu = Menu(
     text="Settings menu",
     options=[
@@ -45,6 +68,10 @@ settings_menu = Menu(
         (
             "Save instructions to text file",
             lambda: input_config_save_instructions(conf=CONF),
+        ),
+        (
+            "Default algorithm",
+            lambda: input_default_algorithm(conf=CONF),
         ),
     ],
 )
@@ -93,12 +120,12 @@ def start_routing(conf: Config):
         return -1
 
     route = find_route(
-        map=map_data, start=conf.origin_position, end=item_locations[0], adjacent=True
+        map=map_data,
+        prod_db=prod_db,
+        start=conf.origin_position,
+        item_ids=item_ids,
+        algorithm=conf.default_algorithm,
     )
-    route_back = find_route(
-        map=map_data, start=route[-1], end=conf.origin_position, adjacent=False
-    )  # Find route back to the origin
-
     # Draw text map
     map_text = draw_text_map(map_data)
     # Add route paths to map
@@ -109,21 +136,10 @@ def start_routing(conf: Config):
     warn("\nWAREHOUSE MAP\n")
     print_map(map_full)
 
-    instr = get_instructions(route, back=False)
+    instr = get_instructions(route=route, prod_db=prod_db, item_ids=item_ids)
     print(instr)
 
-    # Draw text map
-    map_text = draw_text_map(map_data)
-    # Add route paths to map
-    map_text_back = add_paths_to_map(map_text, route_back, item_locations, back=True)
-    # Add axes to map for easier reading
-    map_full_back = add_axes_to_map(map_text_back, cols, rows)
-
-    warn("\nWAREHOUSE MAP\n")
-    print_map(map_full_back)
-    instr_back = get_instructions(route_back, back=True)
-    print(instr_back)
-
+    # TODO respect settings
     # Create the directory "reports" if it does not exist yet
     if not os.path.exists("reports"):
         os.makedirs("reports")
@@ -132,7 +148,7 @@ def start_routing(conf: Config):
     # and append .txt extension
     save_to_file(
         f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
-        gen_instruction_metadata() + instr + "\n" + instr_back,
+        gen_instruction_metadata() + instr,
     )
 
 

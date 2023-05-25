@@ -9,10 +9,15 @@ DEFAULT_COLS = 40
 
 class Config:
     def __init__(
-        self, use_random_item=False, save_instructions=False, origin_position=(0, 0)
+        self,
+        use_random_item=False,
+        save_instructions=False,
+        default_algorithm="b",  # branch and bound by default
+        origin_position=(0, 0),
     ) -> None:
         self.use_random_item = use_random_item
         self.save_instructions = save_instructions
+        self.default_algorithm = default_algorithm
         self.origin_position = origin_position
 
 
@@ -22,7 +27,7 @@ class Config:
 class Prod:
     def __init__(self, id: int, x: int, y: int, _map) -> None:
         self.id, self.x, self.y = id, x, y
-        
+
         # the product's neighbors; initialized with an empty list and will be updated after the first call of get_neighbors
         self._neigh = []
         # reference to the map from which this product instance was created

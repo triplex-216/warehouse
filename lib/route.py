@@ -2,21 +2,6 @@ import heapq
 from .core import get_item, get_item_locations
 
 
-def get_neighbors(map, node):
-    dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-    row, col = len(map), len(map[0])
-    neighbors = []
-    for x, y in dir:
-        neighbor = (node[0] + x, node[1] + y)
-        if (
-            neighbor[0] in range(row)
-            and neighbor[1] in range(col)
-            and map[neighbor[0]][neighbor[1]] == 0
-        ):
-            neighbors.append(neighbor)
-    return neighbors
-
-
 def cost(map, start, end):
     """
     calculate distance between two single node
@@ -96,7 +81,7 @@ def get_graph(map, nodes):
     return graph
 
 
-def greedy(map, prod_db, item_ids, start=(0, 0)):
+def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, int]]]:
     """
     give a list of item to be fetched, return the greedy route
     """
@@ -160,10 +145,8 @@ def greedy(map, prod_db, item_ids, start=(0, 0)):
     print(route)
     return total_cost, route
 
-def default(map, prod_db, item_ids, start=(0, 0)):
-    pass
 
-def get_instructions(route: list, prod_db:dict, item_ids: list):
+def get_instructions(route: list, prod_db: dict, item_ids: list):
     """
     get instructions of a given route
     """
@@ -227,3 +210,26 @@ def get_instructions(route: list, prod_db:dict, item_ids: list):
     instruction_str += "Return to the start position!\n"
 
     return instruction_str
+
+
+def bb(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, int]]]:
+    pass
+
+
+def fallback(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, int]]]:
+    pass
+
+
+def find_route(map, prod_db, start, item_ids, algorithm="g"):
+    if algorithm == "b":  # branch and bound
+        total_cost, route = bb(map=map, prod_db=prod_db, item_ids=item_ids, start=start)
+    elif algorithm == "g":  # greedy
+        total_cost, route = greedy(
+            map=map, prod_db=prod_db, item_ids=item_ids, start=start
+        )
+    elif algorithm == "f":  # fallback
+        total_cost, route = fallback(
+            map=map, prod_db=prod_db, item_ids=item_ids, start=start
+        )
+
+    return route
