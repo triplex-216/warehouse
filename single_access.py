@@ -17,13 +17,20 @@ def single_generate_matrix(map, pd_list):
     # Set all original costs to infinity
     ori_matrix = np.ones((length, length)) * float("inf")
     
+    # Copy map for calculate distance
+    copy_map = map.copy()
+    for node in pd_list:
+        x = node[0]
+        y = node[1]
+        copy_map[x][y] = 0
+
     # Replace with real cost
     for i in range(length):
         node1 = pd_list[i]
         for j in range(length):
             node2 = pd_list[j]
             # Replace it with the function that calculate the true distance between 2 nodes
-            ret = cost(map, node1, node2)
+            ret = cost(copy_map, node1, node2)
             real_cost = ret[0]
             #real_cost = single_cost(node1, node2)
             ori_matrix[i][j] = real_cost
