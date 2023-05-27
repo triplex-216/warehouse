@@ -83,7 +83,7 @@ settings_menu = Menu(
 def start_routing(conf: Config):
     # Read inventory data from text file
     map_data, prod_db = read_inventory_data(DATASET)
-    rows, cols = len(map_data), len(map_data[0])
+    cols, rows = len(map_data), len(map_data[0])
 
     item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[
         0

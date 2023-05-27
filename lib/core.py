@@ -82,15 +82,15 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
     # Product database
     prod_db = dict()
 
-    # Initialize an empty map
+    # Initialize an empty map, it should be a 2-d list[40][21]
     # Note: 0 - empty, 1 - shelf
-    # Column - X, Row - Y
+    # Column - X, Row - Y, map[X][Y]
     cols, rows = DEFAULT_COLS, DEFAULT_ROWS
-    map_data = [[0] * cols for _ in range(rows)]
+    map_data = [[0] * rows for _ in range(cols)]
 
     for i, r, c in zip(id, row, col):
         # Set all shelves to 1
-        map_data[r][c] = 1
+        map_data[c][r] = 1
         prod_db[i] = Prod(id=i, x=c, y=r, _map=map_data)
 
     return map_data, prod_db

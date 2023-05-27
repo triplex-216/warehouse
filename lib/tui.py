@@ -1,6 +1,5 @@
 from .core import Config
-
-
+from numpy import transpose
 class Menu:
     """
     Menu to be displayed in the TUI (text user interface).
@@ -161,16 +160,15 @@ def debug(text=""):
 # Draw the text map
 def draw_text_map(map_data: list[list[int]]):
     # Initialize ASCII map buffer
-    cols, rows = len(map_data[0]), len(map_data)
-    # Preserve 1 row & 1 col for axes
-    map_text = [["__"] * (cols) for r in range(rows)]
+    cols, rows = len(map_data), len(map_data[0])
+    map_text = [["__"] * (rows) for _ in range(cols)] #40*21 2-d list
 
-    for r in range(rows):
-        for c in range(cols):
+    for x in range(cols):
+        for y in range(rows):
             # Mark all 1's in map_data as non-destination shelves
             # (obstacles) in ASCII map
-            if map_data[r][c] == 1:
-                map_text[r][c] = "**"
+            if map_data[x][y] == 1:
+                map_text[x][y] = "**"
 
     return map_text
 
@@ -178,25 +176,25 @@ def draw_text_map(map_data: list[list[int]]):
 # Add X and Y axes to the text map
 def add_axes_to_map(map_text, rows, cols):
     # create a new 2D list with axis indices
-    map_with_axes = [[" " for j in range(cols + 1)] for i in range(rows + 1)]
+    map_with_axes = [[" " for j in range(rows + 1)] for i in range(cols + 1)]
 
     # add the row and column indices
     map_with_axes[0][0] = "  "
-    for i in range(rows):
-        if rows > 9:
-            map_with_axes[i + 1][0] = f"{i:02d}"
-        else:
-            map_with_axes[i + 1][0] = str(i)
-    for j in range(cols):
+    for x in range(cols):
         if cols > 9:
-            map_with_axes[0][j + 1] = f"{j:02d}"
+            map_with_axes[x + 1][0] = f"{x:02d}"
         else:
-            map_with_axes[0][j + 1] = str(j)
+            map_with_axes[x + 1][0] = str(x)
+    for y in range(rows):
+        if rows > 9:
+            map_with_axes[0][y + 1] = f"{y:02d}"
+        else:
+            map_with_axes[0][y + 1] = str(y)
 
     # copy over the original list
-    for i in range(rows):
-        for j in range(cols):
-            map_with_axes[i + 1][j + 1] = map_text[i][j]
+    for x in range(cols):
+        for y in range(rows):
+            map_with_axes[x + 1][y + 1] = map_text[x][y]
 
     return map_with_axes
 
@@ -209,9 +207,9 @@ def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False
 
     # Set all items' shelves
     for pd in pd_list:
-        r = pd[0]
-        c = pd[1]
-        map_text[r][c] = bold_text("SH")
+        x = pd[0]
+        y = pd[1]
+        map_text[x][y] = bold_text("SH")
 
     # for i in range(1, len(paths)):
     #     curr = paths[i - 1]
@@ -227,12 +225,12 @@ def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False
     for curr in paths:
         map_text[curr[0]][curr[1]] = bold_text("##")
 
-    # Change the arrow when the worker need to turn
-    for i in range(2, len(paths)):
-        curr = paths[i]
-        before = paths[i - 1]
-        if map_text[curr[0]][curr[1]] != map_text[before[0]][before[1]]:
-            map_text[before[0]][before[1]] = map_text[curr[0]][curr[1]]
+    # # Change the arrow when the worker need to turn
+    # for i in range(2, len(paths)):
+    #     curr = paths[i]
+    #     before = paths[i - 1]
+    #     if map_text[curr[0]][curr[1]] != map_text[before[0]][before[1]]:
+    #         map_text[before[0]][before[1]] = map_text[curr[0]][curr[1]]
 
     # If going back to origin, mark origin as "OR"
     if back:
@@ -243,9 +241,10 @@ def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False
 
 
 # Print generated text maps
-def print_map(legends: str):
+def print_map(full_map: str):
+
     # print the new list
-    for row in reversed(legends):
+    for row in reversed(transpose(full_map)):
         print(" ".join(row))
     print()  # New line
 
