@@ -6,7 +6,7 @@ from .core import get_item, get_item_locations
 # generate original cost matrix
 def generate_matrix(map, pd_list):
 
-    # Matrix index : index = i * 4 + j
+    # Matrix index : index = i * 4 + j 
     # i: product index in pd_list
     # j: 0: South 1: North 2: West 3: East
     dir = [(0, -1), (0, 1), (-1, 0), (1, 0)]
@@ -244,7 +244,7 @@ def branch_and_bound(map, prod_db, item_ids, start = (0,0)):
 
 def cost(map, start, end):
     """
-    calculate distance between two single node
+    calculate distance and shortest route between two single node
     """
     parent = {}
     route = []
@@ -260,8 +260,10 @@ def cost(map, start, end):
             while current_node in parent:
                 route.append(current_node)
                 current_node = parent[current_node]
+            # append route with start node
             route.append(start)
-            return (len(route), route[::-1])
+            costs = len(route) - 1
+            return (costs, route[::-1])
 
         # Check each neighbor of the current node
         for neighbor in get_neighbors(map, current_node):
@@ -273,7 +275,8 @@ def cost(map, start, end):
                 heapq.heappush(visited_set, (tentative_dis, neighbor))
                 parent[neighbor] = current_node
 
-    return -1
+    print(f"Can not get to position{end}, check if it is a shelf!")
+    return None
 
 def get_neighbors(map, node):
     neighbors = []
@@ -335,7 +338,6 @@ def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, i
     route = []
     total_cost = 0
 
-    all_neighbors = []
     parent = {}
     parent[start] = start
 
@@ -353,9 +355,6 @@ def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, i
                         graph[(neighbor, current)][0],
                         graph[(neighbor, current)][1][::-1],
                     )
-
-                if not dist:
-                    break
 
                 if neighbor not in visited and dist < nearest_distance:
                     nearest_neighbor = neighbor
