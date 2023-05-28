@@ -175,18 +175,18 @@ def single_path(ori_reduced_matrix, start_index, single_start):
     return path, path_cost
 
 # Find the shortest path from a random start node's all possible neighbors
-def branch_and_bound(map, prod_db, item_ids, start = (0,0)):
+def branch_and_bound(graph, items, start=(0,0), end=(0,0)):
     drift = []
     node_num = []
     coord_route = []
-    locations = [start] + get_item_locations(prod_db, item_ids)
+    all_nodes = [start] + items + [end]
     # Get ori_matrix
-    ori_matrix = generate_matrix(map, locations)
+    ori_matrix = generate_matrix(graph, all_nodes)
     
     # Get ori_reduced_matrix and reduced cost(main)
     main_reduced_cost, ori_reduced_matrix = reduced_cost(ori_matrix)
 
-    pd_id = len(locations)
+    pd_id = len(all_nodes)
     # Set a random start point
     start = random.randint(0, pd_id - 1)
     
@@ -222,8 +222,8 @@ def branch_and_bound(map, prod_db, item_ids, start = (0,0)):
     
     
     for i in range(len(shortest_path)):
-        x = locations[node_num[i]][0] + drift[i][0]
-        y = locations[node_num[i]][1] + drift[i][1]
+        x = all_nodes[node_num[i]][0] + drift[i][0]
+        y = all_nodes[node_num[i]][1] + drift[i][1]
 
         if (x,y) == (1,0) or (x,y) == (0,1):
             coord_route.append((0, 0))
@@ -312,8 +312,9 @@ def get_distance(map, node1, node2, start=(0,0), end=(0,0)):
     for p1 in positions1:
         for p2 in positions2:
             if p1 and p2:
-                dis[(p1, p2)] = cost(map, p1, p2)
-                dis[(p2, p1)] = cost(map, p2, p1)
+                distance, route = cost(map, p1, p2)
+                dis[(p1, p2)] = (distance, route)
+                dis[(p2, p1)] = (distance, route[::-1])
 
     return dis
 
@@ -330,21 +331,19 @@ def get_graph(map, nodes, start=(0,0), end=(0,0)):
     return graph
 
 
-def greedy(graph, prod_db, item_ids, start=(0, 0), end=(0,0)) -> tuple[int, list[tuple[int, int]]]:
+def greedy(graph, items, start=(0, 0), end=(0,0)) -> tuple[int, list[tuple[int, int]]]:
     """
     give a list of item to be fetched, return the greedy route
     """
-    unvisited_items = get_item(prod_db, item_ids)
-
     route = [start]
     total_cost = 0
 
-    while unvisited_items:
+    while items:
         current = route[-1]
         nearest_neighbor = None
         nearest_distance = float("inf")
         # search every neighbors of unvisited items
-        for item in unvisited_items:
+        for item in items:
             for neighbor in item.neighbors():
                 if neighbor and neighbor not in route:
                     dist, trace = graph[(current, neighbor)]
@@ -358,9 +357,9 @@ def greedy(graph, prod_db, item_ids, start=(0, 0), end=(0,0)) -> tuple[int, list
             route += nearest_trace[1:]
             total_cost += nearest_distance
             # remove visited item in items list
-            for item in unvisited_items:
+            for item in items:
                 if nearest_neighbor in item.neighbors():
-                    unvisited_items.remove(item)
+                    items.remove(item)
         else:
             # No unvisited neighbors found, the graph might be disconnected
             break
@@ -372,8 +371,7 @@ def greedy(graph, prod_db, item_ids, start=(0, 0), end=(0,0)) -> tuple[int, list
 
     return total_cost, route
 
-def default(graph, prod_db, item_ids, start=(0, 0), end=(0,0)):
-    items = get_item(prod_db, item_ids)
+def default(graph, items, start=(0, 0), end=(0,0)):
     route = [start]
     total_cost = 0
     visited = {start}
@@ -487,18 +485,19 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
 
 def find_route(map, prod_db, item_ids, start=(0,0), end=(0,0), algorithm="g"):
     # Calculate the graph(distance and route between all the accessible entries)
-    all_nodes = [start] + get_item(prod_db, item_ids) + [end]
+    items = get_item(prod_db, item_ids)
+    all_nodes = [start] + items + [end]
     graph = get_graph(map, all_nodes)
     
     if algorithm == "b":  # branch and bound
-        total_cost, route = branch_and_bound(map=map, prod_db=prod_db, item_ids=item_ids, start=start)
+        total_cost, route = branch_and_bound(map=map,items=items, start=start, end=end)
     elif algorithm == "g":  # greedy
         total_cost, route = greedy(
-            graph=graph, prod_db=prod_db, item_ids=item_ids, start=start
+            graph=graph, items=items, start=start, end=end
         )
     elif algorithm == "f":  # fallback
         total_cost, route = default(
-            graph=graph, prod_db=prod_db, item_ids=item_ids, start=start
+            graph=graph, items=items, start=start, end=end
         )
     
     return total_cost, route
