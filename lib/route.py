@@ -1,66 +1,26 @@
 import heapq
 import numpy as np
 import random
-from .core import get_item, get_item_locations
+from itertools import combinations
+from .core import get_item, Node
 
 # generate original cost matrix
-def generate_matrix(map, pd_list):
+def generate_matrix(graph, all_nodes):
 
-    # Matrix index : index = i * 4 + j 
-    # i: product index in pd_list
-    # j: 0: South 1: North 2: West 3: East
-    dir = [(0, -1), (0, 1), (-1, 0), (1, 0)]
-    col, row = len(map), len(map[0])
-    length = len(pd_list) * 4
+    # Matrix index : index = i * 4 + dir
+    # i: node index in all_nodes
+    # dir: 0: North 1: South 2: West 3: East
+    # Init Matrix
+    size = len(all_nodes) * 4
+    orig_matrix = np.ones((size, size)) * float("inf")
     
-    # Set all original costs to -1
-    # If there exist neighbor, replace it with real cost calculated later
-    ori_matrix = np.ones((length, length)) * float("inf")
-    
-    # Find neighbors
-    def find_neighbors(node):
-        neighbors = []
-        neighbors_index = []
-        for x, y in dir:
-            neighbor = (node[0] + x, node[1] + y)
-            if (
-                neighbor[0] in range(row)
-                and neighbor[1] in range(col)
-                and map[neighbor[0]][neighbor[1]] == 0
-            ):
-                neighbors.append(neighbor)
-                neighbors_index.append(dir.index((x,y)))
-        return neighbors, neighbors_index
-    
-    # Get all neighbors and their index in the matrix
-    pd_neighbors = []
-    pd_neighbors_index = []   
-    for i in range(len(pd_list)):
-        neighbors, neighbors_index = find_neighbors(pd_list[i])
-        pd_neighbors += neighbors
-        for j in neighbors_index:
-            index = i * 4 + j
-            pd_neighbors_index.append(index)
-
-    # Replace with real cost
-    for i in range(len(pd_neighbors)):
-        node1 = pd_neighbors[i]
-        for j in range(len(pd_neighbors)):
-            node2 = pd_neighbors[j]
-            # Replace it with the function that calculate the true distance between 2 nodes
-            ret = cost(map, node1, node2)
-            real_cost = ret[0]
-            # real_cost = cost(map, node1, node2)[0]
-            ori_matrix[pd_neighbors_index[i]][pd_neighbors_index[j]] = real_cost
-
-    # Avoid the cost between the node and itself
-    for i in range(len(pd_list)):
-        index1 = i * 4
-        index2 = (i + 1) * 4
-        for x in range(index1, index2):
-            for y in range(index1, index2):
-                ori_matrix[x][y] = float("inf")
-    return ori_matrix
+    for (index1, index2) in combinations(len(all_nodes), 2):
+        for (dir1, dir2) in combinations(range(4), 2):
+            node1 = all_nodes[index1].neighbors()[dir1]
+            node2 = all_nodes[index2].neighbors()[dir2]
+            orig_matrix[index1*4+dir1][index2*4+dir2] = graph[(node1, node2)][0]
+            
+    return orig_matrix
 
 def find_minimum_row(row):
     min_value = min(row)
@@ -246,6 +206,9 @@ def cost(map, start, end):
     """
     calculate distance and shortest route between two single entries
     """
+    if not start or not end:
+        return (float("inf"), [None])
+    
     parent = {}
     route = []
     # Initialize the distance dictionary with the starting node and a cost of 0
@@ -276,7 +239,7 @@ def cost(map, start, end):
                 parent[neighbor] = current_node
 
     print(f"Can not get to position{end}, check if it is a shelf!")
-    return None
+    return (float("inf"), [None])
 
 def get_neighbors(map, node):
     neighbors = []
@@ -293,49 +256,40 @@ def get_neighbors(map, node):
 
     return neighbors
 
-
-def get_distance(map, node1, node2, start=(0,0), end=(0,0)):
+def get_graph(map, items, start, end):
     """
-    get the dictionary records the distances between all accessible entries of two nodes
+    get the whole graph(distance and route) of every product pair
     """
-    dis = {}
-    if node1 == start or node1 == end:
-        positions1 = [node1]
-    else:
+    def get_distance(node1, node2):
+        """
+        get the dictionary records the distances between all accessible entries of two nodes
+        """
+        dis = {}
         positions1 = node1.neighbors()
-    
-    if node2 == start or node2 == end:
-        positions2 = [node2]
-    else:
         positions2 = node2.neighbors()
 
-    for p1 in positions1:
-        for p2 in positions2:
-            if p1 and p2:
+        for p1 in positions1:
+            for p2 in positions2:
                 distance, route = cost(map, p1, p2)
                 dis[(p1, p2)] = (distance, route)
                 dis[(p2, p1)] = (distance, route[::-1])
 
-    return dis
+        return dis
 
-
-def get_graph(map, nodes, start=(0,0), end=(0,0)):
-    """
-    get the whole graph(distance and route) of every product pair
-    """
+    nodes = [start] + items + [end]
     graph = {}
-    for i in range(len(nodes)):
-        for j in range(i + 1, len(nodes)):
-            dis = get_distance(map, nodes[i], nodes[j], start, end)
-            graph = {**graph, **dis}
+    for (node1, node2) in combinations(nodes, 2):
+        dis = get_distance(node1, node2)
+        graph = {**graph, **dis}
+
     return graph
 
 
-def greedy(graph, items, start=(0, 0), end=(0,0)) -> tuple[int, list[tuple[int, int]]]:
+def greedy(graph, items, start: Node, end: Node) -> tuple[int, list[tuple[int, int]]]:
     """
     give a list of item to be fetched, return the greedy route
     """
-    route = [start]
+    route = [start.coord]
     total_cost = 0
 
     while items:
@@ -365,25 +319,25 @@ def greedy(graph, items, start=(0, 0), end=(0,0)) -> tuple[int, list[tuple[int, 
             break
 
     # Add the back route to complete the cycle
-    back_cost, back_route = graph[(route[-1], end)]
+    back_cost, back_route = graph[(route[-1], end.coord)]
     total_cost += back_cost
     route += back_route[1:]
 
     return total_cost, route
 
-def default(graph, items, start=(0, 0), end=(0,0)):
-    route = [start]
+def default(graph, items, start: Node, end:Node):
+    route = [start.coord]
     total_cost = 0
-    visited = {start}
+    fetched_item = set()
 
     for item in items:
         # add visited item
         for neighbor in item.neighbors():
             if neighbor in route:
-                visited.add(item)
+                fetched_item.add(item)
                 break
 
-        if item not in visited:
+        if item not in fetched_item:
             # set entry as the first not None neighbor
             for neighbor in item.neighbors():
                 if neighbor:
@@ -394,7 +348,7 @@ def default(graph, items, start=(0, 0), end=(0,0)):
             total_cost += cost
     
     # Add the back route to complete the cycle
-    back_cost, back_route = graph[(route[-1], end)]
+    back_cost, back_route = graph[(route[-1], end.coord)]
     total_cost += back_cost
     route += back_route[1:]
 
@@ -483,14 +437,12 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
 
     return instruction_str
 
-def find_route(map, prod_db, item_ids, start=(0,0), end=(0,0), algorithm="g"):
+def find_route(map_data, items, start, end, algorithm="g"):
     # Calculate the graph(distance and route between all the accessible entries)
-    items = get_item(prod_db, item_ids)
-    all_nodes = [start] + items + [end]
-    graph = get_graph(map, all_nodes)
-    
+    graph = get_graph(map=map_data, items=items, start=start, end=end)
+
     if algorithm == "b":  # branch and bound
-        total_cost, route = branch_and_bound(map=map,items=items, start=start, end=end)
+        total_cost, route = branch_and_bound(graph=graph,items=items, start=start, end=end)
     elif algorithm == "g":  # greedy
         total_cost, route = greedy(
             graph=graph, items=items, start=start, end=end

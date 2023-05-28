@@ -7,43 +7,31 @@ DEFAULT_ROWS = 21
 DEFAULT_COLS = 40
 
 
-class Config:
-    def __init__(
-        self,
-        use_random_item=False,
-        save_instructions=False,
-        default_algorithm="b",  # branch and bound by default
-        origin_position=(0, 0),
-        end_position=(0, 0),
-    ) -> None:
-        self.use_random_item = use_random_item
-        self.save_instructions = save_instructions
-        self.default_algorithm = default_algorithm
-        self.origin_position = origin_position
-        self.end_position = end_position
-
-
 """ Data processing """
 
-
-class Prod:
-    def __init__(self, id: int, x: int, y: int, _map) -> None:
-        self.id, self.x, self.y = id, x, y
-
-        # the product's neighbors; initialized with an empty list and will be updated after the first call of get_neighbors
+class Node:
+    def __init__(self, coord: tuple, _map):
+        self.coord = coord
+        # the node's neighbors; initialized with an empty list and will be updated after the first call of get_neighbors
         self._neigh = []
-        # reference to the map from which this product instance was created
+        # reference to the map from which this node instance was created
         self._map = _map
-
-    def get_location(self):
-        return (self.x, self.y)
+    
+    def neighbors(self):
+        self._neigh = [self.coord, None, None, None]
+        return self._neigh
+class Prod(Node):
+    def __init__(self, coord, _map, id) -> None:
+        super(Prod, self).__init__(coord, _map)
+        self.id = id
+        self._neigh = []
 
     def neighbors(self):
         if not self._neigh:
             dir = [(1, 0), (-1, 0), (0, -1), (0, 1)] #north, south, west, east
             row, col = len(self._map), len(self._map[0])
             for d_x, d_y in dir:
-                neighbor = (self.x + d_x, self.y + d_y)
+                neighbor = (self.coord[0] + d_x, self.coord[1] + d_y)
                 if (
                     neighbor[0] in range(row)
                     and neighbor[1] in range(col)
@@ -53,6 +41,20 @@ class Prod:
                 else:
                     self._neigh.append(None)
         return self._neigh
+class Config:
+    def __init__(
+        self,
+        use_random_item=False,
+        save_instructions=False,
+        default_algorithm="b",  # branch and bound by default
+        start_position=(0,0),
+        end_position=(0,0),
+    ) -> None:
+        self.use_random_item = use_random_item
+        self.save_instructions = save_instructions
+        self.default_algorithm = default_algorithm
+        self.start_position = start_position
+        self.end_position = end_position
 
 
 # Read data from the file
@@ -92,10 +94,10 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
     cols, rows = DEFAULT_COLS, DEFAULT_ROWS
     map_data = [[0] * rows for _ in range(cols)]
 
-    for i, r, c in zip(id, row, col):
+    for i, x, y in zip(id, col, row):
         # Set all shelves to 1
-        map_data[c][r] = 1
-        prod_db[i] = Prod(id=i, x=c, y=r, _map=map_data)
+        map_data[x][y] = 1
+        prod_db[i] = Prod(coord=(x, y), _map=map_data, id=i)
 
     return map_data, prod_db
 
@@ -112,4 +114,4 @@ def get_item(product_db: dict, id_list: list) -> list[Prod]:
 
 
 def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
-    return [item.get_location() for item in get_item(product_db, id_list)]
+    return [item.coord for item in get_item(product_db, id_list)]
