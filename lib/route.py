@@ -311,8 +311,9 @@ def get_distance(map, node1, node2, start=(0,0), end=(0,0)):
 
     for p1 in positions1:
         for p2 in positions2:
-            dis[(p1, p2)] = cost(map, p1, p2)
-            dis[(p2, p1)] = cost(map, p2, p1)
+            if p1 and p2:
+                dis[(p1, p2)] = cost(map, p1, p2)
+                dis[(p2, p1)] = cost(map, p2, p1)
 
     return dis
 
@@ -333,32 +334,33 @@ def greedy(graph, prod_db, item_ids, start=(0, 0), end=(0,0)) -> tuple[int, list
     """
     give a list of item to be fetched, return the greedy route
     """
-    items = get_item(prod_db, item_ids)
+    unvisited_items = get_item(prod_db, item_ids)
 
     route = [start]
     total_cost = 0
 
-    while items:
+    while unvisited_items:
         current = route[-1]
         nearest_neighbor = None
         nearest_distance = float("inf")
-
-        for item in items:
+        # search every neighbors of unvisited items
+        for item in unvisited_items:
             for neighbor in item.neighbors():
-                dist, trace = graph[(current, neighbor)]
+                if neighbor and neighbor not in route:
+                    dist, trace = graph[(current, neighbor)]
 
-                if neighbor not in route and dist < nearest_distance:
-                    nearest_neighbor = neighbor
-                    nearest_distance = dist
-                    nearest_trace = trace
+                    if dist < nearest_distance:
+                        nearest_neighbor = neighbor
+                        nearest_distance = dist
+                        nearest_trace = trace
 
-        if nearest_neighbor is not None:
+        if nearest_neighbor:
             route += nearest_trace[1:]
             total_cost += nearest_distance
-            #remove visited items
-            for item in items:
+            # remove visited item in items list
+            for item in unvisited_items:
                 if nearest_neighbor in item.neighbors():
-                    items.remove(item)
+                    unvisited_items.remove(item)
         else:
             # No unvisited neighbors found, the graph might be disconnected
             break
@@ -377,12 +379,19 @@ def default(graph, prod_db, item_ids, start=(0, 0), end=(0,0)):
     visited = {start}
 
     for item in items:
+        # add visited item
         for neighbor in item.neighbors():
             if neighbor in route:
                 visited.add(item)
                 break
+
         if item not in visited:
-            cost, trace = graph[(route[-1], item.neighbors()[0])]
+            # set entry as the first not None neighbor
+            for neighbor in item.neighbors():
+                if neighbor:
+                    entry = neighbor
+                    break
+            cost, trace = graph[(route[-1], entry)]
             route += trace[1:]
             total_cost += cost
     
@@ -436,7 +445,7 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
     def is_prod_entry(pos):
         pickup = []
         for item in items:
-            if pos in item.neighbors():
+            if pos in item.neighbors() and pos is not None:
                 pickup.append(item.id)
                 items.remove(item)
         return pickup

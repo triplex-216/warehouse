@@ -40,7 +40,7 @@ class Prod:
 
     def neighbors(self):
         if not self._neigh:
-            dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+            dir = [(1, 0), (-1, 0), (0, -1), (0, 1)] #north, south, west, east
             row, col = len(self._map), len(self._map[0])
             for d_x, d_y in dir:
                 neighbor = (self.x + d_x, self.y + d_y)
@@ -50,6 +50,8 @@ class Prod:
                     and self._map[neighbor[0]][neighbor[1]] == 0
                 ):
                     self._neigh.append(neighbor)
+                else:
+                    self._neigh.append(None)
         return self._neigh
 
 
