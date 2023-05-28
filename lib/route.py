@@ -1,7 +1,7 @@
 import heapq
 import numpy as np
 import random
-from .core import get_item, get_item_locations
+from .core import get_item, get_neighbors
 
 # generate original cost matrix
 def generate_matrix(map, pd_list):
@@ -277,22 +277,6 @@ def cost(map, start, end):
 
     print(f"Can not get to position{end}, check if it is a shelf!")
     return None
-
-def get_neighbors(map, node):
-    neighbors = []
-    dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-    row, col = len(map), len(map[0])
-    for d_x, d_y in dir:
-        neighbor = (node[0] + d_x, node[1] + d_y)
-        if (
-            neighbor[0] in range(row)
-            and neighbor[1] in range(col)
-            and map[neighbor[0]][neighbor[1]] == 0
-        ):
-            neighbors.append(neighbor)
-
-    return neighbors
-
 
 def get_distance(map, node1, node2, start=(0,0), end=(0,0)):
     """
