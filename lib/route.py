@@ -244,7 +244,7 @@ def branch_and_bound(map, prod_db, item_ids, start = (0,0)):
 
 def cost(map, start, end):
     """
-    calculate distance and shortest route between two single node
+    calculate distance and shortest route between two single entries
     """
     parent = {}
     route = []
@@ -294,80 +294,68 @@ def get_neighbors(map, node):
     return neighbors
 
 
-def get_distance(map, start_node, end_node):
+def get_distance(map, node1, node2, start=(0,0), end=(0,0)):
     """
-    get the distance between all accessible entries of two products
+    get the dictionary records the distances between all accessible entries of two nodes
     """
     dis = {}
-    if end_node == (0, 0):
-        end_positions = [end_node]
+    if node1 == start or node1 == end:
+        positions1 = [node1]
     else:
-        end_positions = get_neighbors(map, end_node)
-
-    if start_node == (0, 0):
-        start_positions = [start_node]
+        positions1 = get_neighbors(map, node1)
+    
+    if node2 == start or node2 == end:
+        positions2 = [node2]
     else:
-        start_positions = get_neighbors(map, start_node)
+        positions2 = get_neighbors(map, node2)
 
-    for start in start_positions:
-        for end in end_positions:
-            dis[(start, end)] = cost(map, start, end)
+    for p1 in positions1:
+        for p2 in positions2:
+            dis[(p1, p2)] = cost(map, p1, p2)
+            dis[(p2, p1)] = cost(map, p2, p1)
 
     return dis
 
 
-def get_graph(map, nodes):
+def get_graph(map, nodes, start=(0,0), end=(0,0)):
+    """
+    get the whole graph(distance and route) of every product pair
+    """
     graph = {}
     for i in range(len(nodes)):
         for j in range(i + 1, len(nodes)):
-            dis = get_distance(map, nodes[i], nodes[j])
+            dis = get_distance(map, nodes[i], nodes[j], start, end)
             graph = {**graph, **dis}
     return graph
 
 
-def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, int]]]:
+def greedy(graph, prod_db, item_ids, start=(0, 0), end=(0,0)) -> tuple[int, list[tuple[int, int]]]:
     """
     give a list of item to be fetched, return the greedy route
     """
-    all_nodes = [start] + get_item_locations(prod_db, item_ids)
     items = get_item(prod_db, item_ids)
-    graph = get_graph(map, all_nodes)
 
-    visited = {start}
-    path = [start]
-    route = []
+    route = [start]
     total_cost = 0
 
-    parent = {}
-    parent[start] = start
-
     while items:
-        current = path[-1]
+        current = route[-1]
         nearest_neighbor = None
         nearest_distance = float("inf")
 
         for item in items:
             for neighbor in item.neighbors():
-                try:
-                    dist, trace = graph[(current, neighbor)]
-                except KeyError:
-                    dist, trace = (
-                        graph[(neighbor, current)][0],
-                        graph[(neighbor, current)][1][::-1],
-                    )
+                dist, trace = graph[(current, neighbor)]
 
-                if neighbor not in visited and dist < nearest_distance:
+                if neighbor not in route and dist < nearest_distance:
                     nearest_neighbor = neighbor
                     nearest_distance = dist
                     nearest_trace = trace
 
         if nearest_neighbor is not None:
-            path.append(nearest_neighbor)
-            route += nearest_trace[:-1]
+            route += nearest_trace[1:]
             total_cost += nearest_distance
-            visited.add(nearest_neighbor)
-            # i = orig_neighbors.index(nearest_neighbor_group)
-            # parent[nearest_neighbor] = all_nodes[i+1]
+            #remove visited items
             for item in items:
                 if nearest_neighbor in item.neighbors():
                     items.remove(item)
@@ -375,20 +363,35 @@ def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, i
             # No unvisited neighbors found, the graph might be disconnected
             break
 
-    # Add the start node to complete the cycle
-    route += graph[(start, path[-1])][1][::-1]
-    total_cost += graph[(start, path[-1])][0]
+    # Add the back route to complete the cycle
+    back_cost, back_route = graph[(route[-1], end)]
+    total_cost += back_cost
+    route += back_route[1:]
 
-    path.append(start)
     return total_cost, route
 
-def default(map, prod_db, item_ids, start=(0, 0)):
+def default(graph, prod_db, item_ids, start=(0, 0), end=(0,0)):
     items = get_item(prod_db, item_ids)
-    path = [start]
+    route = [start]
+    total_cost = 0
+    visited = {start}
+
     for item in items:
-        path.append(item.neighbors()[0])
-    path.append(start)
-    return path_to_route(map, path)
+        for neighbor in item.neighbors():
+            if neighbor in route:
+                visited.add(item)
+                break
+        if item not in visited:
+            cost, trace = graph[(route[-1], item.neighbors()[0])]
+            route += trace[1:]
+            total_cost += cost
+    
+    # Add the back route to complete the cycle
+    back_cost, back_route = graph[(route[-1], end)]
+    total_cost += back_cost
+    route += back_route[1:]
+
+    return total_cost, route
 
 def path_to_route(map, path: list[tuple]):
     """
@@ -402,7 +405,8 @@ def path_to_route(map, path: list[tuple]):
         total_cost += dis
         route += trace[:-1]
         pos = next_pos
-    route.append(path[0])
+    route.append(path[-1])
+
     return total_cost, route
 
 def get_instructions(route: list, prod_db: dict, item_ids: list):
@@ -419,13 +423,13 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
         """
         # get direction
         if position[0] > next_position[0]:
-            dir = "down"
-        elif position[0] < next_position[0]:
-            dir = "up"
-        elif position[1] > next_position[1]:
             dir = "left"
-        elif position[1] < next_position[1]:
+        elif position[0] < next_position[0]:
             dir = "right"
+        elif position[1] > next_position[1]:
+            dir = "down"
+        elif position[1] < next_position[1]:
+            dir = "up"
 
         return dir
 
@@ -436,9 +440,6 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
                 pickup.append(item.id)
                 items.remove(item)
         return pickup
-
-    def rev(pos: tuple[int, int]) -> tuple[int, int]:
-        return (pos[1], pos[0])
 
     # if there are only one node in the route
     if len(route) == 1:
@@ -456,7 +457,7 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
         pickup = is_prod_entry(pos)
         cnt += len(pickup)
         if pickup:
-            instruction_str += f"From {rev(start)} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(pos)}\n"
+            instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
             instruction_str += f"Pick up the product {pickup}!\n"
             instruction = new_instruction
             start = pos
@@ -466,25 +467,29 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
             if new_instruction == instruction:
                 dis += 1
             else:
-                instruction_str += f"From {rev(start)} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(pos)}\n"
+                instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
                 instruction = new_instruction
                 start = pos
                 dis = 1
-    instruction_str += f"From {rev(start)}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {rev(next_pos)}\n"
+    instruction_str += f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {next_pos}\n"
     instruction_str += "Return to the start position!\n"
 
     return instruction_str
 
-def find_route(map, prod_db, start, item_ids, algorithm="g"):
+def find_route(map, prod_db, item_ids, start=(0,0), end=(0,0), algorithm="g"):
+    # Calculate the graph(distance and route between all the accessible entries)
+    all_nodes = [start] + get_item_locations(prod_db, item_ids) + [end]
+    graph = get_graph(map, all_nodes)
+    
     if algorithm == "b":  # branch and bound
         total_cost, route = branch_and_bound(map=map, prod_db=prod_db, item_ids=item_ids, start=start)
     elif algorithm == "g":  # greedy
         total_cost, route = greedy(
-            map=map, prod_db=prod_db, item_ids=item_ids, start=start
+            graph=graph, prod_db=prod_db, item_ids=item_ids, start=start
         )
     elif algorithm == "f":  # fallback
         total_cost, route = default(
-            map=map, prod_db=prod_db, item_ids=item_ids, start=start
+            graph=graph, prod_db=prod_db, item_ids=item_ids, start=start
         )
     
     return total_cost, route

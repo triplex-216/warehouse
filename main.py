@@ -117,8 +117,9 @@ def start_routing(conf: Config):
     total_cost, route = find_route(
         map=map_data,
         prod_db=prod_db,
-        start=conf.origin_position,
         item_ids=item_ids,
+        start=conf.origin_position,
+        end=conf.end_position,
         algorithm=conf.default_algorithm,
     )
     # Draw text map

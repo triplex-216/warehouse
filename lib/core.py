@@ -14,11 +14,13 @@ class Config:
         save_instructions=False,
         default_algorithm="b",  # branch and bound by default
         origin_position=(0, 0),
+        end_position=(0, 0),
     ) -> None:
         self.use_random_item = use_random_item
         self.save_instructions = save_instructions
         self.default_algorithm = default_algorithm
         self.origin_position = origin_position
+        self.end_position = end_position
 
 
 """ Data processing """
