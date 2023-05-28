@@ -1,3 +1,6 @@
+# Resolves class type hinting itself, see https://stackoverflow.com/a/33533514
+from __future__ import annotations
+
 import csv
 from math import floor
 
@@ -26,32 +29,78 @@ class Config:
 """ Data processing """
 
 
-class Prod:
-    def __init__(self, id: int, x: int, y: int, _map) -> None:
-        self.id, self.x, self.y = id, x, y
+class AccessPoint:
+    def __init__(self, coord: tuple[int, int]) -> None:
+        self.coord = coord
+        self.dv = dict()  # Initialize distance vector
 
-        # the product's neighbors; initialized with an empty list and will be updated after the first call of get_neighbors
-        self._neigh = []
-        # reference to the map from which this product instance was created
+    def add_path(
+        self, destination: AccessPoint, distance: int, path: list[tuple[int, int]]
+    ) -> None:
+        """
+        Add a path to the distance vector. The path goes from this AP
+        to another AP with a tuple containing the path's distance and
+        grid-by-grid path to take
+        """
+        self.dv[destination] = (distance, path)
+
+    def get_nearest_ap(self) -> tuple[int, list[tuple[int, int]]]:
+        """
+        Return the nearest AP stored in the current AP's distance vector
+        """
+        return min(self.dv.items(), key=lambda item: item[1][0])
+
+
+class Prod:
+    def __init__(self, id: int, coord: tuple[int, int], _map) -> None:
+        self.id, self.coord = id, coord
+
+        # The product's neighbors; initialized with empty elements and will be updated later
+        self._neigh = {"n": None, "e": None, "s": None, "w": None}
+        # Bind reference to the map from which this product instance was created
         self._map = _map
 
-    def get_location(self):
-        return (self.x, self.y)
+        # Detect valid neighbors (access points)
+        neighbors = get_neighbors(self._map, self.coord)
+        # Assign each neighbor to a direction (n/s/e/w)
+        for n in neighbors:
+            offset = (n[0] - self.coord[0], n[1] - self.coord[1])
+            match offset:
+                case (1, 0):
+                    self._neigh["n"] = AccessPoint(coord=n)
+                case (0, 1):
+                    self._neigh["e"] = AccessPoint(coord=n)
+                case (-1, 0):
+                    self._neigh["s"] = AccessPoint(coord=n)
+                case (0, -1):
+                    self._neigh["w"] = AccessPoint(coord=n)
 
-    def neighbors(self):
-        if not self._neigh:
-            dir = [(1, 0), (-1, 0), (0, -1), (0, 1)] #north, south, west, east
-            row, col = len(self._map), len(self._map[0])
-            for d_x, d_y in dir:
-                neighbor = (self.x + d_x, self.y + d_y)
-                if (
-                    neighbor[0] in range(row)
-                    and neighbor[1] in range(col)
-                    and self._map[neighbor[0]][neighbor[1]] == 0
-                ):
-                    self._neigh.append(neighbor)
-                else:
-                    self._neigh.append(None)
+    @property
+    def x(self) -> int:
+        return self.coord[0]
+
+    @property
+    def y(self) -> int:
+        return self.coord[1]
+
+    @property
+    def n(self) -> AccessPoint:
+        return self._neigh["n"]
+
+    @property
+    def e(self) -> AccessPoint:
+        return self._neigh["e"]
+
+    @property
+    def s(self) -> AccessPoint:
+        return self._neigh["s"]
+
+    @property
+    def w(self) -> AccessPoint:
+        return self._neigh["w"]
+
+    @property
+    def neighbors(self) -> list[AccessPoint]:
         return self._neigh
 
 
@@ -95,7 +144,7 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
     for i, r, c in zip(id, row, col):
         # Set all shelves to 1
         map_data[c][r] = 1
-        prod_db[i] = Prod(id=i, x=c, y=r, _map=map_data)
+        prod_db[i] = Prod(id=i, coord=(c, r), _map=map_data)
 
     return map_data, prod_db
 
