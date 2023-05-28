@@ -10,7 +10,7 @@ def generate_matrix(map, pd_list):
     # i: product index in pd_list
     # j: 0: South 1: North 2: West 3: East
     dir = [(0, -1), (0, 1), (-1, 0), (1, 0)]
-    row, col = len(map), len(map[0])
+    col, row = len(map), len(map[0])
     length = len(pd_list) * 4
     
     # Set all original costs to -1
@@ -302,12 +302,12 @@ def get_distance(map, node1, node2, start=(0,0), end=(0,0)):
     if node1 == start or node1 == end:
         positions1 = [node1]
     else:
-        positions1 = get_neighbors(map, node1)
+        positions1 = node1.neighbors()
     
     if node2 == start or node2 == end:
         positions2 = [node2]
     else:
-        positions2 = get_neighbors(map, node2)
+        positions2 = node2.neighbors()
 
     for p1 in positions1:
         for p2 in positions2:
@@ -478,7 +478,7 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
 
 def find_route(map, prod_db, item_ids, start=(0,0), end=(0,0), algorithm="g"):
     # Calculate the graph(distance and route between all the accessible entries)
-    all_nodes = [start] + get_item_locations(prod_db, item_ids) + [end]
+    all_nodes = [start] + get_item(prod_db, item_ids) + [end]
     graph = get_graph(map, all_nodes)
     
     if algorithm == "b":  # branch and bound
