@@ -11,13 +11,13 @@ DEFAULT_COLS = 40
 
 
 class Prod:
-    def __init__(self, id: int, x: int, y: int, _map) -> None:
+    def __init__(self, id: int, x: int, y: int, map) -> None:
         self.id, self.x, self.y = id, x, y
 
         # the product's neighbors; initialized with an empty list and will be updated after the first call of get_neighbors
         self._neigh = []
         # reference to the map from which this product instance was created
-        self._map = _map
+        self._map = map
 
     def get_location(self):
         return (self.x, self.y)
@@ -94,7 +94,7 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
         # Set all shelves to 1
         map_data[c][r] = 1
 
-        prod_db[i] = Prod(id=i, x=c, y=r, _map=map_data)
+        prod_db[i] = Prod(id=i, x=c, y=r, map=map_data)
 
     return map_data, prod_db
 
