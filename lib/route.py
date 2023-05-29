@@ -22,7 +22,7 @@ class AccessPoint:
         grid-by-grid path to take
         """
         self.dv[destination] = (distance, path)
-        # destination.dv[self] = (distance, path)
+        destination.dv[self] = (distance, path)
 
     def get_nearest_ap(self) -> tuple[int, list[tuple[int, int]]]:
         """
@@ -84,22 +84,34 @@ class Node:
         return {k: v for (k, v) in self._neigh.items() if v is not None}
 
 
-class EndNode(Node):
+class SingleNode(Node):
     """
-    Nodes that are on both "ends" of the nodes list, i.e. the starting or
-    ending nodes. EndNodes have a item ID of 0 and a north AP that has
-    the same coordinate as the EndNodes themselves, so that they can be
-    treated like standard Nodes in algorithms.
+    Single Access Nodes that are on both "ends" of the nodes list, i.e.
+    the starting or ending nodes. SingleNode have a item ID of 0 and a north
+    AP that has the same coordinate as the SingleNode themselves, so that they
+    can be treated like standard Nodes in algorithms.
     """
 
-    def __init__(self, coord, map):
-        super().__init__(0, coord, map)
+    def __init__(self, coord, map, access_self=True):
+        super().__init__(0, coord, map)  # Initialize APs like a normal Node
 
-        # Remove all APs except the north one, and set it to have the
-        # same coordinate as the node
-        for direction in ["n", "e", "s", "w"]:
-            self._neigh[direction] = None
-        self._neigh["n"] = AccessPoint(coord=self.coord, parent=self)
+        if access_self:
+            # If the node's grid itself can be accessed,
+            # i.e. Start/End nodes where no AP is necessary
+            self._neigh["n"] = AccessPoint(coord=self.coord, parent=self)
+            # Remove all APs except the north one, and set it to have the
+            # same coordinate as the node
+            for direction in ["e", "s", "w"]:
+                self._neigh[direction] = None
+        else:
+            # Keep the first available AP and drop others
+            # Has a priority: N-E-S-W
+            drop = True
+            for direction in ["n", "e", "s", "w"]:
+                if not drop:
+                    self._neigh[direction] = None
+                if self._neigh[direction]:
+                    drop = False  # Drop APs on other directions
 
 
 # generate original cost matrix

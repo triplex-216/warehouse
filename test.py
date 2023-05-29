@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 from lib.core import *
 from lib.route import *
 from lib.tui import *
+from lib.genetic import *
 from itertools import combinations, product
+from random import sample
 
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 map_data, prod_db = read_inventory_data(DATASET)
@@ -52,7 +54,7 @@ test_order_lists = [
     ],
 ]
 
-order_list = [prod_db[item] for item in test_order_lists[1]]
+order_list = [prod_db[item] for item in test_order_lists[-1]]
 
 
 def prod_to_node(prod: Prod):
@@ -89,15 +91,26 @@ def generate_cost_graph(
             # print(f"{ap_1.coord} -> {ap_2.coord}: {dist}")
     print(f"edges={edges}")
 
-# def greedy(nodes_list):
-
 
 item_nodes = [prod_to_node(prod) for prod in order_list]
-start_node = EndNode(coord=(0, 0), map=map_data)
-end_node = EndNode(coord=(39, 20), map=map_data)
-# nodes_list = [start_node] + item_nodes + [end_node]
+start_node = SingleNode(coord=(0, 0), map=map_data)
+end_node = SingleNode(coord=(39, 20), map=map_data)
 
+# generate_cost_graph(item_nodes, start_node=start_node, end_node=end_node)
 
-generate_cost_graph(item_nodes, start_node=start_node, end_node=end_node)
+# Genetic Algorithm
+single_access_nodes = [
+    SingleNode(coord=(p.x, p.y), map=map_data, access_self=False)
+    for p in sample(order_list, k=5)
+]
+# single_access_nodes = [
+#     SingleNode(coord=(p.x, p.y), map=map_data, access_self=False)
+#     for p in order_list[:3]
+# ]
+worker_node = start_node
+input_nodes = [start_node] + single_access_nodes
+generate_cost_graph(input_nodes)
+print("computed costs")
 
-pass
+population, fit = genetic(input_nodes)
+print([n.coord for n in population[0]], 1 / fit[0])
