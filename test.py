@@ -52,15 +52,25 @@ test_order_lists = [
 ]
 
 
-item_count = 5
-id_list = [108335, 391825, 340367, 286457, 661741]
+# item_count = 5
+# id_list = [108335, 391825, 340367, 286457, 661741]
 
-for id_list in test_order_lists[1:2]:
-    distance, route = find_route(map_data, prod_db, id_list, start=(0,0), end=(0,0), algorithm="f")
-    print(f"Total distance is {distance}.")
-    print(get_instructions(route, prod_db, id_list))
+# for id_list in test_order_lists[1:2]:
+#     distance, route = find_route(map_data, prod_db, id_list, start=(0,0), end=(0,0), algorithm="f")
+#     print(f"Total distance is {distance}.")
+#     print(get_instructions(route, prod_db, id_list))
 
 # print(cost(map_data, (0,1), (0,2))[0])
-    
+
+order_list = [prod_db[item] for item in test_order_lists[1]]
 
 
+def prod_to_node(prod: Prod):
+    return Node(prod.id, (prod.x, prod.y), prod._map)
+
+
+order_list_nodes = [prod_to_node(prod) for prod in order_list]
+
+
+
+pass
