@@ -8,7 +8,6 @@ from random import sample
 
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 map_data, prod_db = read_inventory_data(DATASET)
-
 test_order_lists = [
     [108335],
     [108335, 391825, 340367, 286457, 661741],
@@ -54,8 +53,6 @@ test_order_lists = [
     ],
 ]
 
-order_list = [prod_db[item] for item in test_order_lists[1]]
-
 
 def prod_to_node(prod: Prod):
     return Node(prod.id, (prod.x, prod.y), prod._map)
@@ -89,40 +86,11 @@ def generate_cost_graph(
             ap_1.add_path(destination=ap_2, distance=dist, path=route)
             edges += 1
             # print(f"{ap_1.coord} -> {ap_2.coord}: {dist}")
-    print(f"edges={edges}")
-
-
-item_nodes = [prod_to_node(prod) for prod in order_list]
-start_node = SingleNode(coord=(0, 0), map=map_data)
-end_node = SingleNode(coord=(39, 20), map=map_data)
-
-# generate_cost_graph(item_nodes, start_node=start_node, end_node=end_node)
-
-# Genetic Algorithm
-# single_access_nodes = [
-#     SingleNode(coord=(p.x, p.y), map=map_data, access_self=False)
-#     for p in sample(order_list, k=3)
-# ]
-single_access_nodes = [
-    SingleNode(coord=(p.x, p.y), map=map_data, access_self=False)
-    for p in order_list[:3]
-]
-worker_node = start_node
-input_nodes = [start_node] + single_access_nodes
-generate_cost_graph(input_nodes)
-print("computed costs")
-
-population, fit = genetic(input_nodes)
-print([n.coord for n in population[0]], 1 / fit[0])
 
 
 def draw_graph(nodes: list[SingleNode]):
     # Create a figure and axes
     fig, ax = plt.subplots()
-
-    # node_coordinates = [n.coord for n in nodes]
-    # aps = [next(iter((n.neighbors.values()))) for n in item_nodes]
-    # ap_coordinates = [ap.coord for ap in aps]
 
     for n in nodes:
         x, y = n.coord
@@ -144,26 +112,28 @@ def draw_graph(nodes: list[SingleNode]):
                 ha="center",
                 va="center",
             )
-    # # Draw the nodes
-    # for x, y in node_coordinates:
-    #     ax.plot(x, y, "o", color="blue", markersize=10)
-    #     ax.text(x + 0.1, y + 0.1, f"({x},{y})", fontsize=10)
 
-    # Draw the edges
-    # for edge in edges:
-    #     x_coords = [nodes[edge[0]][0], nodes[edge[1]][0]]
-    #     y_coords = [nodes[edge[0]][1], nodes[edge[1]][1]]
-    #     ax.plot(x_coords, y_coords, "k-")
-
-    # Set the axis limits
-    # ax.set_xlim(0, 6)
-    # ax.set_ylim(0, 6)
-
-    # Set the aspect ratio to be equal
     ax.set_aspect("equal")
 
     # Display the graph
     plt.show()
 
 
-draw_graph(input_nodes)
+if __name__ == "__main__":
+    order_list = [prod_db[item] for item in test_order_lists[1]]
+    item_nodes = [prod_to_node(prod) for prod in order_list]
+    start_node = SingleNode(coord=(0, 0), map=map_data)
+    end_node = SingleNode(coord=(39, 20), map=map_data)
+
+    single_access_nodes = [
+        SingleNode(coord=(p.x, p.y), map=map_data, access_self=False)
+        for p in order_list[:3]
+    ]
+    worker_node = start_node
+    input_nodes = [start_node] + single_access_nodes
+    generate_cost_graph(input_nodes)
+
+    population, fit = genetic(input_nodes)
+    # print([n.coord for n in population[0]], 1 / fit[0])
+
+    draw_graph(input_nodes)

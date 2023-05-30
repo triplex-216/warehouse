@@ -52,22 +52,51 @@ def crossover(a: list[AccessPoint], b: list[AccessPoint]) -> list[AccessPoint]:
     return better_child
 
 
-def genetic(item_nodes, rounds=2) -> tuple[list[list[AccessPoint]], list[float]]:
+def genetic(item_nodes, rounds=3) -> tuple[list[list[AccessPoint]], list[float]]:
+    def show_individual(individual):
+        return f"{[n.coord for n in individual]}"
+
     population = generate_population(item_nodes, size=10)
+
+    print("Generated initial population by randomly sampling from permutations: ")
+    for idx, individual in enumerate(population):
+        print(
+            f"{idx}: {show_individual(individual)}, Fitness={fitness(individual):.4f}"
+        )
 
     n = 10
     for r in range(rounds):
+        print(f"\nRound {r + 1}/{rounds}")
         # Cross over best 2 for 5 times
+        print("\nCross over stage: ")
         for _ in range(5):
             a, b = sorted(population, key=lambda i: fitness(i), reverse=True)[:2]
-            population.append(crossover(a, b))
+            child = crossover(a, b)
+            print(
+                f"{show_individual(child)} <== {show_individual(a)}, {show_individual(b)}"
+            )
+            population.append(child)
 
         # Mutate best 5 to yield 5 children
-        population += list(
-            map(mutate, sorted(population, key=lambda i: fitness(i), reverse=True)[:5])
-        )
+        print("\nMutation stage: ")
+        population = sorted(population, key=lambda i: fitness(i), reverse=True)
+        for _ in range(5):
+            parent = population[_]
+            child = mutate(parent)
+            print(f"{show_individual(child)} <== {show_individual(parent)}")
+            population.append(child)
 
         # Sort population by fitness and keep the best n individual
         population = sorted(population, key=lambda i: fitness(i), reverse=True)[:n]
+
+        print("\nRound finished; showing best 10 individuals from population: ")
+        for idx, individual in enumerate(population):
+            print(
+                f"{idx}: {show_individual(individual)}, Fitness={fitness(individual):.4f}"
+            )
+
+        print(
+            f"Best result: {show_individual(individual)}, Fitness={fitness(individual):.4f}, Route Cost={1/fitness(individual)}"
+        )
 
     return population, list(map(fitness, population))
