@@ -36,7 +36,7 @@ def setup_matrix(nodes: list[Node | SingleNode], multi_access=False):
         mat = np.full(shape=(mat_size, mat_size), fill_value=float("inf"))
 
         # Firstly, process the item nodes' rows/cols
-        for node in nodes[1:-1]:
+        for node in nodes:
             node_idx = nodes.index(node)
             rows_range = range(node_idx * 4, node_idx * 4 + 4)
             for r in rows_range:
@@ -51,6 +51,18 @@ def setup_matrix(nodes: list[Node | SingleNode], multi_access=False):
                         ):  # Set grid to cost if destination AP exists
                             mat[r][c] = curr_ap.dv[dest_ap][0]
                             print(f"({r},{c}) <== {mat[r][c]} ({dest_node.coord})")
+
+        # Process start/end nodes
+        start_node_range = range(0, 4)
+        end_node_range = range(mat_size - 4, mat_size)
+
+        for r in start_node_range:
+            for c in end_node_range:
+                mat[r, c] = 0 # Start => End must be 0
+
+        for r in end_node_range: 
+            for c in start_node_range: 
+                mat[r, c] = float("inf") # End => Start must be infinity
 
         return mat
 
