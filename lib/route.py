@@ -296,32 +296,35 @@ def default(nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint):
     return total_cost, path
 
 
-def path_to_route(map, path: list[tuple]):
+def path_instructions(path: list[AccessPoint], start_ap:AccessPoint, end_ap:AccessPoint):
     """
-    Transfer path to route with every passed node contained
+    Transfer path to route with every coordinate of passed node contained
     """
-    total_cost = 0
-    route = []
-    pos = path[0]
-    for next_pos in path[1:]:
-        dis, trace = cost(map, pos, next_pos)
-        total_cost += dis
-        route += trace[:-1]
-        pos = next_pos
-    route.append(path[-1])
+    route = [start_ap.coord] 
+    instruction_str = ""
+    # re-order the path to begin with start and terminate with end
+    start_index = path.index(start_ap)
+    path = path[start_index:] + path[:start_index]
 
-    return total_cost, route
+    ap = path[0]
+    for next in path[1:]:
+        trace = ap.dv[next][1]
+        route.append(trace[1:])
+        instruction_str += get_step_instructions(trace)
+        if next.parent.id == -1:
+            instruction_str += "Return to the end position!\n"
+        else:
+            instruction_str += f"Pick up the product {next.parent.id}!\n"
+        ap = next
+
+    return instruction_str, route
 
 
-def get_instructions(route: list, prod_db: dict, item_ids: list):
+def get_step_instructions(trace: list[tuple]):
     """
     get instructions of a given route
     """
-
-    instruction_str = ""
-    items = get_item(prod_db, item_ids)
-
-    def get_step_instruction(position, next_position):
+    def get_direction(position, next_position):
         """
         get route discription of one movement
         """
@@ -334,49 +337,29 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
             dir = "down"
         elif position[1] < next_position[1]:
             dir = "up"
-
         return dir
-
-    def is_prod_entry(pos):
-        pickup = []
-        for item in items:
-            if pos in item.neighbors() and pos is not None:
-                pickup.append(item.id)
-                items.remove(item)
-        return pickup
-
+    
+    instruction_str = ""
     # if there are only one node in the route
-    if len(route) == 1:
-        instruction_str += "You can pick up the product at current position!\n"
-        return
+    if len(trace) == 1:
+        return instruction_str
 
-    start, next_pos = route[0], route[1]
-    instruction = get_step_instruction(start, next_pos)
-    dis = 1
-    cnt = 0
+    start, next_pos = trace[0], trace[1]
+    direction = get_direction(start, next_pos)
+    step = 1
 
-    for idx in range(1, len(route) - 1):
-        pos, next_pos = route[idx], route[idx + 1]
-        new_instruction = get_step_instruction(pos, next_pos)
-        pickup = is_prod_entry(pos)
-        cnt += len(pickup)
-        if pickup:
-            instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
-            instruction_str += f"Pick up the product {pickup}!\n"
-            instruction = new_instruction
-            start = pos
-            dis = 1
+    for idx in range(1, len(trace) - 1):
+        pos, next_pos = trace[idx], trace[idx + 1]
+        new_direction = get_direction(pos, next_pos)
+        # if two idr are the same
+        if new_direction == direction:
+            step += 1
         else:
-            # if two idr are the same
-            if new_instruction == instruction:
-                dis += 1
-            else:
-                instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
-                instruction = new_instruction
-                start = pos
-                dis = 1
-    instruction_str += f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {next_pos}\n"
-    instruction_str += "Return to the start position!\n"
+            instruction_str += f"From {start} move {step} {'steps' if step > 1 else 'step'} {direction} to {pos}\n"
+            direction = new_direction
+            start = pos
+            step = 1
+    instruction_str += f"From {start}, move {step} {'steps' if step > 1 else 'step'} {direction} to {next_pos}\n"
 
     return instruction_str
 
