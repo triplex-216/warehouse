@@ -16,8 +16,9 @@ def branch_and_bound(
     # all_nodes_coordinates = [n.coord for n in all_nodes]
     # 2. Setup the initial matrix and reduce
     init_mat = setup_matrix(nodes=all_nodes, multi_access=True)
-    print_matrix(init_mat, all_nodes)
+    print_matrix(init_mat)
     init_mat = reduce_matrix(init_mat, multi_access=True)
+    print_matrix(init_mat)
     # 3. Start branching
 
     # Randomly pick a node to begin with
@@ -35,7 +36,7 @@ def setup_matrix(nodes: list[Node | SingleNode], multi_access=False):
         mat_size = len(nodes * 4)
         mat = np.full(shape=(mat_size, mat_size), fill_value=float("inf"))
 
-        # Firstly, process the item nodes' rows/cols
+        # Process item nodes
         for node in nodes:
             node_idx = nodes.index(node)
             rows_range = range(node_idx * 4, node_idx * 4 + 4)
@@ -83,11 +84,53 @@ def setup_matrix(nodes: list[Node | SingleNode], multi_access=False):
         return mat
 
 
-def reduce_matrix(mat, multi_access=False):
-    return mat
+def reduce_matrix(mat: np.ndarray, multi_access=False):
+    if multi_access:
+
+        def compress_minimum_matrix(mat: np.ndarray):
+            compressed_mat_size = int(mat_size / 4)
+            compressed_mat = np.full(
+                shape=(compressed_mat_size, compressed_mat_size),
+                fill_value=float("inf"),
+            )
+            for r in range(compressed_mat_size):
+                for c in range(compressed_mat_size):
+                    # For each 4x4 block, get local minimum
+                    block = mat[r * 4 : (r + 1) * 4, c * 4 : (c + 1) * 4]
+                    compressed_mat[r][c] = block.min()
+            return compressed_mat
+
+        mat_size = mat.shape[0]
+
+        # Reduce by row
+        compressed_mat = compress_minimum_matrix(mat)
+        print_matrix(compressed_mat)
+        row_reduce_costs = [min(row) for row in compressed_mat]
+        for r, cost in enumerate(row_reduce_costs):
+            print(f"Reducing rows {r*4} ~ {(r+1)*4} by {cost}")
+            # print(mat[r * 4 : (r + 1) * 4])
+            mat[r * 4 : (r + 1) * 4] -= cost
+            # print(mat[r * 4 : (r + 1) * 4])
+            print(cost)
+        print_matrix(mat)
+
+        # Reduce by col
+        compressed_mat = compress_minimum_matrix(mat)
+        print_matrix(compressed_mat)
+        col_reduce_costs = [min(col) for col in compressed_mat.T]
+        for c, cost in enumerate(col_reduce_costs):
+            print(f"Reducing cols {c*4} ~ {(c+1)*4} by {cost}")
+            # print(mat[:, c * 4 : (c + 1) * 4])
+            mat[:, c * 4 : (c + 1) * 4] -= cost
+            # print(mat[:, c * 4 : (c + 1) * 4])
+            print(cost)
+        print_matrix(mat)
+
+        print_matrix(compress_minimum_matrix(mat))
+        return mat
 
 
-def print_matrix(mat, nodes: list[Node]):
+def print_matrix(mat):
     header = " " * 3
     lines = []
     for idx, row in enumerate(mat):
