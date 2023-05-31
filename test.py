@@ -3,6 +3,7 @@ from lib.core import *
 from lib.route import *
 from lib.tui import *
 from lib.genetic import *
+from lib.bnb import *
 from itertools import combinations, product
 from random import sample
 
@@ -60,8 +61,8 @@ order_list = [prod_db[item] for item in test_order_lists[1]]
 item_nodes = [prod_to_node(prod) for prod in order_list]
 start_node = SingleNode(coord=(0, 0), map=map_data)
 end_node = SingleNode(coord=(39, 20), map=map_data)
-# nodes_list = [start_node] + item_nodes + [end_node]
+all_nodes = [start_node] + item_nodes + [end_node]
+generate_cost_graph(all_nodes)
 
-res = greedy(items=item_nodes, start=start_node, end=end_node)
 
-pass
+branch_and_bound(nodes=item_nodes, start=start_node, end=end_node)
