@@ -58,11 +58,16 @@ def setup_matrix(nodes: list[Node | SingleNode], multi_access=False):
 
         for r in start_node_range:
             for c in end_node_range:
-                mat[r, c] = 0 # Start => End must be 0
+                mat[r, c] = 0  # Start => End must be 0
 
-        for r in end_node_range: 
-            for c in start_node_range: 
-                mat[r, c] = float("inf") # End => Start must be infinity
+        for r in end_node_range:
+            for c in start_node_range:
+                mat[r, c] = float("inf")  # End => Start must be infinity
+
+        # Copy the upper half to the lower half
+        row_indices, col_indices = np.triu_indices(mat_size, k=1)
+        for r, c in zip(row_indices, col_indices):
+            mat[c, r] = mat[r, c]
 
         return mat
 
