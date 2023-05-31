@@ -97,7 +97,7 @@ def get_item(product_db: dict, id_list: list) -> list[Prod]:
 
 
 def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
-    return [item.coord for item in get_item(product_db, id_list)]
+    return [item.get_location() for item in get_item(product_db, id_list)]
 
 def get_aps(map, node):
     neighbors = []

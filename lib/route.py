@@ -309,7 +309,7 @@ def path_instructions(path: list[AccessPoint], start_ap:AccessPoint, end_ap:Acce
     ap = path[0]
     for next in path[1:]:
         trace = ap.dv[next][1]
-        route.append(trace[1:])
+        route += trace[1:]
         instruction_str += get_step_instructions(trace)
         if next.parent.id == -1:
             instruction_str += "Return to the end position!\n"
