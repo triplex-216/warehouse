@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import heapq
-import numpy as np
-import random
 from itertools import combinations, product
-from .core import get_item, Prod
+from .core import *
 
 
 class AccessPoint:
@@ -51,24 +49,24 @@ class Node:
         self.id, self.coord = id, coord
 
         # The product's neighbors; initialized with empty elements and will be updated later
-        self._neigh = {"n": None, "e": None, "s": None, "w": None}
+        self._ap = {"n": None, "e": None, "s": None, "w": None}
         # Bind reference to the map from which this product instance was created
         self._map = map
 
         # Detect valid neighbors (access points)
-        neighbors = get_neighbors(self._map, self.coord)
+        aps = get_aps(self._map, self.coord)
         # Assign each neighbor to a direction (n/s/e/w)
-        for n in neighbors:
-            offset = (n[0] - self.coord[0], n[1] - self.coord[1])
+        for ap in aps:
+            offset = (ap[0] - self.coord[0], ap[1] - self.coord[1])
             match offset:
                 case (1, 0):
-                    self._neigh["n"] = AccessPoint(coord=n, parent=self)
+                    self._ap["n"] = AccessPoint(coord=ap, parent=self)
                 case (0, 1):
-                    self._neigh["e"] = AccessPoint(coord=n, parent=self)
+                    self._ap["e"] = AccessPoint(coord=ap, parent=self)
                 case (-1, 0):
-                    self._neigh["s"] = AccessPoint(coord=n, parent=self)
+                    self._ap["s"] = AccessPoint(coord=ap, parent=self)
                 case (0, -1):
-                    self._neigh["w"] = AccessPoint(coord=n, parent=self)
+                    self._ap["w"] = AccessPoint(coord=ap, parent=self)
 
     @property
     def x(self) -> int:
@@ -80,31 +78,31 @@ class Node:
 
     @property
     def n(self) -> AccessPoint:
-        return self._neigh["n"]
+        return self._ap["n"]
 
     @property
     def e(self) -> AccessPoint:
-        return self._neigh["e"]
+        return self._ap["e"]
 
     @property
     def s(self) -> AccessPoint:
-        return self._neigh["s"]
+        return self._ap["s"]
 
     @property
     def w(self) -> AccessPoint:
-        return self._neigh["w"]
+        return self._ap["w"]
 
     @property
-    def neighbors(self):
-        return {k: v for (k, v) in self._neigh.items() if v is not None}
+    def aps(self):
+        return [v for v in self._ap.values() if v]
 
     @property
-    def neighbors_as_list(self) -> list[AccessPoint]:
+    def aps_as_list(self) -> list[AccessPoint]:
         """
         Return a list of neighbors containing empty directions,
         For example, "n" would be None if the north AP doesn't exist
         """
-        return list(self._neigh.values())
+        return list(self._ap.values())
 
 
 class SingleNode(Node):
@@ -116,24 +114,24 @@ class SingleNode(Node):
     """
 
     def __init__(self, coord, map, access_self=True):
-        super().__init__(0, coord, map)  # Initialize APs like a normal Node
+        super().__init__(-1, coord, map)  # Initialize APs like a normal Node
 
         if access_self:
             # If the node's grid itself can be accessed,
             # i.e. Start/End nodes where no AP is necessary
-            self._neigh["n"] = AccessPoint(coord=self.coord, parent=self)
+            self._ap["n"] = AccessPoint(coord=self.coord, parent=self)
             # Remove all APs except the north one, and set it to have the
             # same coordinate as the node
             for direction in ["e", "s", "w"]:
-                self._neigh[direction] = None
+                self._ap[direction] = None
         else:
             # Keep the first available AP and drop others
             # Has a priority: N-E-S-W
             drop = True
             for direction in ["n", "e", "s", "w"]:
                 if not drop:
-                    self._neigh[direction] = None
-                if self._neigh[direction]:
+                    self._ap[direction] = None
+                if self._ap[direction]:
                     drop = False  # Drop APs on other directions
 
 
