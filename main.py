@@ -44,17 +44,18 @@ def input_default_algorithm(conf: Config):
     algs = {
         "b": "Branch and bound",
         "g": "Greedy",
+        "n": "Nearest neighbor",
     }
 
     str_default_algorithm = input_data_as_list(
-        "Choose a default algorithm of your choice (b/g)\nb - branch and bound; g - greedy",
+        "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy",
         "s",
         1,
     )[0]
     while str_default_algorithm not in algs.keys():
         print(f"Please choose a valid option from b/g")
         str_default_algorithm = input_data_as_list(
-            "Choose a default algorithm of your choice (b/g)\nb - branch and bound; g - greedy",
+            "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy",
             "s",
             1,
         )[0]
@@ -138,6 +139,7 @@ def start_routing(conf: Config):
     algs = {
         "b": "Branch and bound",
         "g": "Greedy",
+        "n": "Nearest neighbor",
     }
     print(instr)
     print(f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm.")
