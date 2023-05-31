@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 from lib.core import *
 from lib.route import *
 from lib.tui import *
-from branch_bound import branch_and_bound
 
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 map_data, prod_db = read_inventory_data(DATASET)
@@ -57,9 +56,12 @@ item_count = 5
 id_list = [108335, 391825, 340367, 286457, 661741]
 
 for id_list in test_order_lists[:2]:
-    locations = [(0,0)]+get_item_locations(prod_db, id_list)
-    distance, path = branch_and_bound(map_data, locations)
-    distance, route = path_to_route(map_data, path)
+    start = (0,0)
+    end = (0,0)
+    items = get_item(prod_db, id_list)
+    nodes = [start]+get_item_locations(prod_db, id_list)+[end]
+    graph = get_graph(map_data, nodes, start, end)
+    distance, route = greedy(graph, items, start, end)
     print(f"Total distance is {distance}.")
     print(get_instructions(route, prod_db, id_list))
     
