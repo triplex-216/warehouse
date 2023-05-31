@@ -140,7 +140,7 @@ def prod_to_node(prod: Prod):
 
 
 def generate_cost_graph(
-    item_nodes: list[Node], start_node: Node = None, end_node: Node = None
+    nodes: list[Node], start_node: SingleNode = None, end_node: SingleNode = None
 ) -> None:
     """
     Calculate and store costs between all possible AccessPoint pairs between
@@ -150,18 +150,11 @@ def generate_cost_graph(
 
     start_node and end_node can be absent
     """
-    item_nodes = item_nodes[:]  # Prevent modifying input data
-
-    if start_node:
-        item_nodes.insert(0, start_node)
-    if end_node:
-        item_nodes.append(end_node)
-
     edges = 0
-    for a, b in combinations(item_nodes, 2):
+    for a, b in combinations(nodes, 2):
         ap_1: AccessPoint  # Type hints for IDE
         ap_2: AccessPoint
-        for ap_1, ap_2 in product(a.neighbors.values(), b.neighbors.values()):
+        for ap_1, ap_2 in product(a.aps, b.aps):
             # Skip if the AP pair has been calculated
             if ap_2 in ap_1.dv.keys():
                 continue
@@ -170,8 +163,17 @@ def generate_cost_graph(
             ap_1.add_path(destination=ap_2, distance=dist, path=route)
             edges += 1
             # print(f"{ap_1.coord} -> {ap_2.coord}: {dist}")
-    print(f"edges={edges}")
-
+     
+    if start_node and end_node:
+        start_ap, end_ap = start_node.aps_as_list[0], end_node.aps_as_list[0]
+        # Set distance[(node, start)] = inf to ensure no one can access start
+        for node in nodes:
+            if node != start_node:
+                for ap in node.aps:
+                    _, path = ap.dv[start_ap]
+                    ap.dv[start_ap] = (float("inf"), path)
+        # Set distance[(end, start)] = 0 to ensure end to start is connected
+        end_ap.dv[start_ap] = (0, [None])
 
     print(f"edges={edges}")
 
@@ -187,10 +189,10 @@ def cost(map, start, end) -> tuple[int, list[tuple[int, int]]]:
     # Initialize the distance dictionary with the starting node and a cost of 0
     distance = {start: 0}
     # Initialize the priority queue with the starting node and its cost
-    visited_set = [(0, start)]
-    while visited_set:
+    open_set = [(0, start)]
+    while open_set:
         # Get the node with the lowest cost from the priority queue
-        current_node = heapq.heappop(visited_set)[1]
+        current_node = heapq.heappop(open_set)[1]
 
         if current_node == end:
             while current_node in parent:
@@ -202,136 +204,96 @@ def cost(map, start, end) -> tuple[int, list[tuple[int, int]]]:
             return (costs, route[::-1])
 
         # Check each neighbor of the current node
-        for neighbor in get_neighbors(map, current_node):
+        for neighbor in get_aps(map, current_node):
             # Calculate the tentative cost to reach the neighbor
             tentative_dis = distance[current_node] + 1
             # If the neighbor is not in the open set or the tentative cost is less than the existing cost, add it to the open set
             if tentative_dis < distance.get(neighbor, float("inf")):
                 distance[neighbor] = tentative_dis
-                heapq.heappush(visited_set, (tentative_dis, neighbor))
+                heapq.heappush(open_set, (tentative_dis, neighbor))
                 parent[neighbor] = current_node
 
     print(f"Path from {start} to {end} not found, check if it is a shelf!")
     return None
 
-
-def get_neighbors(map, node):
-    neighbors = []
-    dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-    row, col = len(map), len(map[0])
-    for d_x, d_y in dir:
-        neighbor = (node[0] + d_x, node[1] + d_y)
-        if (
-            neighbor[0] in range(row)
-            and neighbor[1] in range(col)
-            and map[neighbor[0]][neighbor[1]] == 0
-        ):
-            neighbors.append(neighbor)
-
-    return neighbors
-
-
-def get_graph(map, items, start, end):
+def greedy(nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint, init_ap: AccessPoint):
     """
-    get the whole graph(distance and route) of every product pair
+    give a list of nodes, return the greedy route
     """
-
-    def get_distance(node1, node2):
-        """
-        get the dictionary records the distances between all accessible entries of two nodes
-        """
-        dis = {}
-        positions1 = node1.neighbors()
-        positions2 = node2.neighbors()
-
-        for p1 in positions1:
-            for p2 in positions2:
-                distance, route = cost(map, p1, p2)
-                dis[(p1, p2)] = (distance, route)
-                dis[(p2, p1)] = (distance, route[::-1])
-
-        return dis
-
-    nodes = [start] + items + [end]
-    graph = {}
-    for node1, node2 in combinations(nodes, 2):
-        dis = get_distance(node1, node2)
-        graph = {**graph, **dis}
-
-    return graph
-
-
-def greedy(items: list[Node], start: SingleNode, end: SingleNode):
-    """
-    give a list of item to be fetched, return the greedy route
-    """
-    start_ap, end_ap = (start.neighbors_as_list[0], end.neighbors_as_list[0])
-
-    route = [start_ap]
+    # Init path, path is a list of ap
+    if init_ap == start_ap:
+        init_ap = end_ap
+    path = [init_ap]
+    # Init unvisited set
+    unvisited = set(nodes)
+    unvisited.remove(init_ap.parent)
     total_cost = 0
 
-    while items:
-        current = route[-1]
+    while unvisited:
+        current = path[-1]
+        # end_node should always go to start_node
+        if current == end_ap:
+            path.append(start_ap)
+            unvisited.remove(start_ap.parent)
+            current = start_ap
+
         nearest_neighbor = None
         nearest_distance = float("inf")
-        # search every neighbors of unvisited items
-        for item in items:
+        # search every access points of unvisited nodes
+        for node in unvisited:
             ap: AccessPoint
-            for ap in item.neighbors_as_list:
-                if ap and ap not in route:
+            for ap in node.aps:
+                if ap not in path:
                     dist, _trace = current.dv[ap]
-
                     if dist < nearest_distance:
                         nearest_neighbor = ap
                         nearest_distance = dist
 
         if nearest_neighbor:
-            route.append(nearest_neighbor)
+            path.append(nearest_neighbor)
             total_cost += nearest_distance
-            # remove visited item in items list
-            for item in items:
-                if nearest_neighbor in item.neighbors_as_list:
-                    items.remove(item)
+            # remove visited
+            unvisited.remove(nearest_neighbor.parent)
         else:
             # No unvisited neighbors found, the graph might be disconnected
             break
 
-    # Add the back route to complete the cycle
-    back_cost, back_route = route[-1].dv[end_ap]
-    total_cost += back_cost
-    route.append(end_ap)
+    # Add the back cost to complete the cycle
+    dist, _trace = path[-1].dv[init_ap]
+    total_cost += dist
 
-    return total_cost, route
+    return total_cost, path
 
+def nearest_neighbor(nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint):
+    all_path = []
+    for node in nodes:
+        for ap in node.aps:
+            cost, path = greedy(nodes, start_ap, end_ap, ap)
+            heapq.heappush(all_path, (cost, id(path), path))
+    
+    bestcost, _id, bestpath = heapq.heappop(all_path)
+    return bestcost, bestpath
 
-def default(graph, items, start=(0, 0), end=(0, 0)):
-    route = [start]
+def default(nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint):
+    path = [start_ap]
     total_cost = 0
-    fetched_item = set()
+    curr = path[-1]
 
-    for item in items:
-        # add visited item
-        for neighbor in item.neighbors():
-            if neighbor in route:
-                fetched_item.add(item)
-                break
-
-        if item not in fetched_item:
-            # set entry as the first not None neighbor
-            for neighbor in item.neighbors():
-                if neighbor:
-                    entry = neighbor
-                    break
-            cost, trace = graph[(route[-1], entry)]
-            route += trace[1:]
-            total_cost += cost
+    for node in nodes[1:]:
+        # access node though first not None ap
+        next = node.aps[0]
+        path.append(next)
+        # record cost
+        cost, trace = curr.dv[next]
+        total_cost += cost
+        # update curr
+        curr = path[-1]
 
     # Add the back route to complete the cycle
-    back_cost, back_route = graph[(route[-1], end.coord)]
-    total_cost += back_cost
-    route += back_route[1:]
+    dist, _trace = path[-1].dv[start_ap]
+    total_cost += dist
 
-    return total_cost, route
+    return total_cost, path
 
 
 def path_to_route(map, path: list[tuple]):
@@ -419,17 +381,20 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
     return instruction_str
 
 
-def find_route(map, prod_db, item_ids, start=(0, 0), end=(0, 0), algorithm="g"):
+def find_route(item_nodes: list[Node], start_node: SingleNode, end_node:SingleNode, algorithm="g"):
     # Calculate the graph(distance and route between all the accessible entries)
-    items = get_item(prod_db, item_ids)
-    all_nodes = [start] + items + [end]
-    graph = get_graph(map, all_nodes)
+    start_ap, end_ap = start_node.aps_as_list[0], end_node.aps_as_list[0]
+    nodes = [start_node] + item_nodes + [end_node]
+    generate_cost_graph(nodes, start_node=start_node, end_node=end_node)
 
     if algorithm == "b":  # branch and bound
-        total_cost, route = branch_and_bound(map=map, items=items, start=start, end=end)
+        print("WIP")
     elif algorithm == "g":  # greedy
-        total_cost, route = greedy(graph=graph, items=items, start=start, end=end)
+        total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
+    elif algorithm == "n":
+        total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
     elif algorithm == "f":  # fallback
-        total_cost, route = default(graph=graph, items=items, start=start, end=end)
-
-    return total_cost, route
+        total_cost, path = default(nodes, start_ap, end_ap)
+    
+    instructions, route = path_instructions(path, start_ap, end_ap)
+    return instructions, total_cost, route
