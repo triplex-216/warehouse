@@ -13,7 +13,8 @@ CONF = Config(
     use_random_item=True,
     save_instructions=True,
     default_algorithm="g",
-    origin_position=(0, 0),
+    start_position=(0, 0),
+    end_position=(0, 0)
 )
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 
@@ -113,13 +114,16 @@ def start_routing(conf: Config):
     if len(item_locations) == 0:
         warn("The item(s) requested are not available at the moment. ")
         return -1
-
+    # use node instance
+    start = Node(conf.start_position, map_data)
+    end = Node(conf.end_position, map_data)
+    # use prod instance
+    items = get_item(prod_db, item_ids)
     total_cost, route = find_route(
-        map=map_data,
-        prod_db=prod_db,
-        item_ids=item_ids,
-        start=conf.origin_position,
-        end=conf.end_position,
+        map_data=map_data,
+        items=items,
+        start=start,
+        end=end,
         algorithm=conf.default_algorithm,
     )
     # Draw text map

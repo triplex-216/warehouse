@@ -90,7 +90,7 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
     cols, rows = DEFAULT_COLS, DEFAULT_ROWS
     map_data = [[0] * rows for _ in range(cols)]
 
-    for i, r, c in zip(id, row, col):
+    for i, c, r in zip(id, col, row):
         # Set all shelves to 1
         map_data[c][r] = 1
 
@@ -111,4 +111,4 @@ def get_item(product_db: dict, id_list: list) -> list[Prod]:
 
 
 def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
-    return [item.get_location() for item in get_item(product_db, id_list)]
+    return [item.coord for item in get_item(product_db, id_list)]
