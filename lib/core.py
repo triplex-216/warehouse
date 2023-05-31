@@ -28,7 +28,7 @@ class Prod(Node):
 
     def neighbors(self):
         if not self._neigh:
-            dir = [(1, 0), (-1, 0), (0, -1), (0, 1)] #north, south, west, east
+            dir = [(0, 1), (0, -1), (-1, 0), (1, 0)] #north, south, west, east
             row, col = len(self._map), len(self._map[0])
             for d_x, d_y in dir:
                 neighbor = (self.coord[0] + d_x, self.coord[1] + d_y)
