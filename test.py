@@ -1,3 +1,4 @@
+import resource
 import matplotlib.pyplot as plt
 from lib.core import *
 from lib.route import *
@@ -66,3 +67,7 @@ generate_cost_graph(all_nodes)
 
 
 branch_and_bound(nodes=item_nodes, start=start_node, end=end_node)
+
+peak_mem_in_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+peak_mem_str = f"{peak_mem_in_kb} KiB ({(peak_mem_in_kb/1024):0.2f} MiB)"
+print(peak_mem_str)
