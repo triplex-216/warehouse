@@ -90,7 +90,7 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
     cols, rows = DEFAULT_COLS, DEFAULT_ROWS
     map_data = [[0] * rows for _ in range(cols)]
 
-    for i, x, y in zip(id, col, row):
+    for i, c, r in zip(id, col, row):
         # Set all shelves to 1
         map_data[c][r] = 1
 

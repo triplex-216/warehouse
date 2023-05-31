@@ -4,7 +4,8 @@ from __future__ import annotations
 import heapq
 import numpy as np
 import random
-from .core import get_item
+from itertools import combinations, product
+from .core import get_item, Prod
 
 
 class AccessPoint:
@@ -22,7 +23,7 @@ class AccessPoint:
         grid-by-grid path to take
         """
         self.dv[destination] = (distance, path)
-        # destination.dv[self] = (distance, path)
+        destination.dv[self] = (distance, path[::-1])
 
     def get_nearest_ap(self) -> tuple[int, list[tuple[int, int]]]:
         """
@@ -32,6 +33,20 @@ class AccessPoint:
 
 
 class Node:
+    """
+    A Node describes an item in the warehouse. Aside from an ID, it has
+    a coordinate and up to 4 APs (AccessPoint, defined in the AccessPoint class).
+
+    Each Node instance is intended to be initialized with a map. The
+    map binding should not be changed once created, as the underlying
+    AccessPoints depend on the map.
+
+    After creation of Nodes, the distance vectors in their APs are empty
+    and do not store any distance information. generate_cost_graph()
+    must be called to calculate and create that information, see its
+    documentation for usage.
+    """
+
     def __init__(self, id: int, coord: tuple[int, int], map) -> None:
         self.id, self.coord = id, coord
 
@@ -80,26 +95,74 @@ class Node:
         return self._neigh["w"]
 
     @property
-    def neighbors(self) -> list[AccessPoint]:
+    def neighbors(self):
         return {k: v for (k, v) in self._neigh.items() if v is not None}
 
 
-class EndNode(Node):
+class SingleNode(Node):
     """
-    Nodes that are on both "ends" of the nodes list, i.e. the starting or
-    ending nodes. EndNodes have a item ID of 0 and a north AP that has
-    the same coordinate as the EndNodes themselves, so that they can be
-    treated like standard Nodes in algorithms.
+    Single Access Nodes that are on both "ends" of the nodes list, i.e.
+    the starting or ending nodes. SingleNode have a item ID of 0 and a north
+    AP that has the same coordinate as the SingleNode themselves, so that they
+    can be treated like standard Nodes in algorithms.
     """
 
-    def __init__(self, coord, map):
-        super().__init__(0, coord, map)
+    def __init__(self, coord, map, access_self=True):
+        super().__init__(0, coord, map)  # Initialize APs like a normal Node
 
-        # Remove all APs except the north one, and set it to have the
-        # same coordinate as the node
-        for direction in ["n", "e", "s", "w"]:
-            self._neigh[direction] = None
-        self._neigh["n"] = AccessPoint(coord=self.coord, parent=self)
+        if access_self:
+            # If the node's grid itself can be accessed,
+            # i.e. Start/End nodes where no AP is necessary
+            self._neigh["n"] = AccessPoint(coord=self.coord, parent=self)
+            # Remove all APs except the north one, and set it to have the
+            # same coordinate as the node
+            for direction in ["e", "s", "w"]:
+                self._neigh[direction] = None
+        else:
+            # Keep the first available AP and drop others
+            # Has a priority: N-E-S-W
+            drop = True
+            for direction in ["n", "e", "s", "w"]:
+                if not drop:
+                    self._neigh[direction] = None
+                if self._neigh[direction]:
+                    drop = False  # Drop APs on other directions
+
+
+def prod_to_node(prod: Prod):
+    return Node(prod.id, (prod.x, prod.y), prod._map)
+
+
+def generate_cost_graph(
+    item_nodes: list[Node], start_node: Node = None, end_node: Node = None
+) -> None:
+    """
+    Calculate and store costs between all possible AccessPoint pairs between
+    all pairs of nodes from nodes_list.
+    e.g. For each of the 16 pairs from the 8 APs: A{n,e,s,w} and B{n,e,s,w},
+    calculate 16 distances and store in AccessPoints' distance vectors.
+
+    start_node and end_node can be absent
+    """
+    if start_node:
+        item_nodes.insert(0, start_node)
+    if end_node:
+        item_nodes.append(end_node)
+
+    edges = 0
+    for a, b in combinations(item_nodes, 2):
+        ap_1: AccessPoint  # Type hints for IDE
+        ap_2: AccessPoint
+        for ap_1, ap_2 in product(a.neighbors.values(), b.neighbors.values()):
+            # Skip if the AP pair has been calculated
+            if ap_2 in ap_1.dv.keys():
+                continue
+
+            dist, route = cost(a._map, ap_1.coord, ap_2.coord)
+            ap_1.add_path(destination=ap_2, distance=dist, path=route)
+            edges += 1
+            # print(f"{ap_1.coord} -> {ap_2.coord}: {dist}")
+    print(f"edges={edges}")
 
 
 # generate original cost matrix
@@ -350,7 +413,7 @@ def cost(map, start, end) -> tuple[int, list[tuple[int, int]]]:
     """
     if not start or not end:
         return (float("inf"), [None])
-    
+
     parent = {}
     route = []
     # Initialize the distance dictionary with the starting node and a cost of 0
@@ -400,20 +463,17 @@ def get_neighbors(map, node):
     return neighbors
 
 
-def get_distance(map, node1, node2, start=(0, 0), end=(0, 0)):
+def get_graph(map, items, start, end):
     """
     get the whole graph(distance and route) of every product pair
     """
+
     def get_distance(node1, node2):
         """
         get the dictionary records the distances between all accessible entries of two nodes
         """
         dis = {}
         positions1 = node1.neighbors()
-
-    if node2 == start or node2 == end:
-        positions2 = [node2]
-    else:
         positions2 = node2.neighbors()
 
         for p1 in positions1:
@@ -424,13 +484,9 @@ def get_distance(map, node1, node2, start=(0, 0), end=(0, 0)):
 
         return dis
 
-
-def get_graph(map, nodes, start=(0, 0), end=(0, 0)):
-    """
-    get the whole graph(distance and route) of every product pair
-    """
+    nodes = [start] + items + [end]
     graph = {}
-    for (node1, node2) in combinations(nodes, 2):
+    for node1, node2 in combinations(nodes, 2):
         dis = get_distance(node1, node2)
         graph = {**graph, **dis}
 
