@@ -57,12 +57,11 @@ order_list = [prod_db[item] for item in test_order_lists[1]]
 
 item_nodes = [prod_to_node(prod) for prod in order_list]
 start_node = SingleNode(coord=(0, 0), map=map_data)
-end_node = SingleNode(coord=(39, 20), map=map_data)
-# nodes_list = [start_node] + item_nodes + [end_node]
+end_node = SingleNode(coord=(7, 11), map=map_data)
+nodes = [start_node] + item_nodes + [end_node]
+
+instructions, total_cost, route = find_route(item_nodes, start_node, end_node, "n")
+print(total_cost)
+print(instructions)
 
 
-generate_cost_graph(item_nodes, start_node=start_node, end_node=end_node)
-
-res = greedy(items=item_nodes, start=start_node, end=end_node)
-
-pass
