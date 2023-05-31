@@ -100,9 +100,9 @@ def print_matrix(mat, nodes: list[Node]):
                 dir = "?"
 
         node_name = f"{floor(idx / 4)}{dir}"
-        line = f"{node_name}"
+        line = f"{node_name} "
         for num in row:
-            line += f"{num:4.0f} "
+            line += f"{num:<4.0f} " if num != float("inf") else "---- "
 
         header += f"{node_name:5}"
         lines.append(line)
