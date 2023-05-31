@@ -98,6 +98,14 @@ class Node:
     def neighbors(self):
         return {k: v for (k, v) in self._neigh.items() if v is not None}
 
+    @property
+    def neighbors_as_list(self) -> list[AccessPoint]:
+        """
+        Return a list of neighbors containing empty directions,
+        For example, "n" would be None if the north AP doesn't exist
+        """
+        return list(self._neigh.values())
+
 
 class SingleNode(Node):
     """
@@ -144,6 +152,8 @@ def generate_cost_graph(
 
     start_node and end_node can be absent
     """
+    item_nodes = item_nodes[:]  # Prevent modifying input data
+
     if start_node:
         item_nodes.insert(0, start_node)
     if end_node:
@@ -493,11 +503,13 @@ def get_graph(map, items, start, end):
     return graph
 
 
-def greedy(graph, items, start=(0, 0), end=(0, 0)) -> tuple[int, list[tuple[int, int]]]:
+def greedy(items: list[Node], start: SingleNode, end: SingleNode):
     """
     give a list of item to be fetched, return the greedy route
     """
-    route = [start.coord]
+    start_ap, end_ap = (start.neighbors_as_list[0], end.neighbors_as_list[0])
+
+    route = [start_ap]
     total_cost = 0
 
     while items:
@@ -506,30 +518,30 @@ def greedy(graph, items, start=(0, 0), end=(0, 0)) -> tuple[int, list[tuple[int,
         nearest_distance = float("inf")
         # search every neighbors of unvisited items
         for item in items:
-            for neighbor in item.neighbors():
-                if neighbor and neighbor not in route:
-                    dist, trace = graph[(current, neighbor)]
+            ap: AccessPoint
+            for ap in item.neighbors_as_list:
+                if ap and ap not in route:
+                    dist, _trace = current.dv[ap]
 
                     if dist < nearest_distance:
-                        nearest_neighbor = neighbor
+                        nearest_neighbor = ap
                         nearest_distance = dist
-                        nearest_trace = trace
 
         if nearest_neighbor:
-            route += nearest_trace[1:]
+            route.append(nearest_neighbor)
             total_cost += nearest_distance
             # remove visited item in items list
             for item in items:
-                if nearest_neighbor in item.neighbors():
+                if nearest_neighbor in item.neighbors_as_list:
                     items.remove(item)
         else:
             # No unvisited neighbors found, the graph might be disconnected
             break
 
     # Add the back route to complete the cycle
-    back_cost, back_route = graph[(route[-1], end.coord)]
+    back_cost, back_route = route[-1].dv[end_ap]
     total_cost += back_cost
-    route += back_route[1:]
+    route.append(end_ap)
 
     return total_cost, route
 
