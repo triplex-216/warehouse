@@ -114,16 +114,16 @@ def start_routing(conf: Config):
     if len(item_locations) == 0:
         warn("The item(s) requested are not available at the moment. ")
         return -1
-    # use node instance
-    start = Node(conf.start_position, map_data)
-    end = Node(conf.end_position, map_data)
+    # use single node instance
+    start_node = SingleNode(coord=conf.start_position, map=map_data)
+    end_node = SingleNode(coord=conf.end_position, map=map_data)
     # use prod instance
     items = get_item(prod_db, item_ids)
-    total_cost, route = find_route(
-        map_data=map_data,
-        items=items,
-        start=start,
-        end=end,
+    item_nodes = [prod_to_node(prod) for prod in items]
+    instr, total_cost, route = find_route(
+        item_nodes=item_nodes,
+        start_node=start_node,
+        end_node=end_node,
         algorithm=conf.default_algorithm,
     )
     # Draw text map
@@ -139,7 +139,6 @@ def start_routing(conf: Config):
         "b": "Branch and bound",
         "g": "Greedy",
     }
-    instr = get_instructions(route=route, prod_db=prod_db, item_ids=item_ids)
     print(instr)
     print(f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm.")
 
