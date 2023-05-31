@@ -104,30 +104,30 @@ def reduce_matrix(mat: np.ndarray, multi_access=False):
 
         # Reduce by row
         compressed_mat = compress_minimum_matrix(mat)
-        print_matrix(compressed_mat)
+        # print_matrix(compressed_mat)
         row_reduce_costs = [min(row) for row in compressed_mat]
         for r, cost in enumerate(row_reduce_costs):
             print(f"Reducing rows {r*4} ~ {(r+1)*4} by {cost}")
             # print(mat[r * 4 : (r + 1) * 4])
             mat[r * 4 : (r + 1) * 4] -= cost
             # print(mat[r * 4 : (r + 1) * 4])
-            print(cost)
-        print_matrix(mat)
+        print(f"Row reduced cost = {sum(row_reduce_costs)}")
 
         # Reduce by col
         compressed_mat = compress_minimum_matrix(mat)
-        print_matrix(compressed_mat)
+        # print_matrix(compressed_mat)
         col_reduce_costs = [min(col) for col in compressed_mat.T]
         for c, cost in enumerate(col_reduce_costs):
             print(f"Reducing cols {c*4} ~ {(c+1)*4} by {cost}")
             # print(mat[:, c * 4 : (c + 1) * 4])
             mat[:, c * 4 : (c + 1) * 4] -= cost
             # print(mat[:, c * 4 : (c + 1) * 4])
-            print(cost)
-        print_matrix(mat)
+        print(f"Column reduced cost = {sum(col_reduce_costs)}")
 
-        print_matrix(compress_minimum_matrix(mat))
-        return mat
+        total_cost = sum(row_reduce_costs) + sum(col_reduce_costs)
+        print(f"Finished reducing matrix. Cost = {total_cost}")
+        # print_matrix(compress_minimum_matrix(mat))
+        return mat, total_cost
 
 
 def print_matrix(mat):
