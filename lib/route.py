@@ -96,13 +96,13 @@ class Node:
 
     @property
     def neighbors(self):
-        return {k: v for (k, v) in self._neigh.items() if v is not None}
+        return [v for v in self._neigh.values() if v]
 
     @property
-    def neighbors_as_list(self) -> list[AccessPoint]:
+    def neighbors_all(self) -> list[AccessPoint]:
         """
         Return a list of neighbors containing empty directions,
-        For example, "n" would be None if the north AP doesn't exist
+        For example, the first element would be None if the north AP doesn't exist
         """
         return list(self._neigh.values())
 
@@ -163,7 +163,7 @@ def generate_cost_graph(
     for a, b in combinations(item_nodes, 2):
         ap_1: AccessPoint  # Type hints for IDE
         ap_2: AccessPoint
-        for ap_1, ap_2 in product(a.neighbors.values(), b.neighbors.values()):
+        for ap_1, ap_2 in product(a.neighbors, b.neighbors):
             # Skip if the AP pair has been calculated
             if ap_2 in ap_1.dv.keys():
                 continue
@@ -507,7 +507,7 @@ def greedy(items: list[Node], start: SingleNode, end: SingleNode):
     """
     give a list of item to be fetched, return the greedy route
     """
-    start_ap, end_ap = (start.neighbors_as_list[0], end.neighbors_as_list[0])
+    start_ap, end_ap = (start.neighbors_all[0], end.neighbors_all[0])
 
     route = [start_ap]
     total_cost = 0
@@ -519,7 +519,7 @@ def greedy(items: list[Node], start: SingleNode, end: SingleNode):
         # search every neighbors of unvisited items
         for item in items:
             ap: AccessPoint
-            for ap in item.neighbors_as_list:
+            for ap in item.neighbors_all:
                 if ap and ap not in route:
                     dist, _trace = current.dv[ap]
 
@@ -532,7 +532,7 @@ def greedy(items: list[Node], start: SingleNode, end: SingleNode):
             total_cost += nearest_distance
             # remove visited item in items list
             for item in items:
-                if nearest_neighbor in item.neighbors_as_list:
+                if nearest_neighbor in item.neighbors_all:
                     items.remove(item)
         else:
             # No unvisited neighbors found, the graph might be disconnected

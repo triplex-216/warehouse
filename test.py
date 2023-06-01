@@ -57,17 +57,31 @@ test_order_lists = [
 ]
 
 order_list = [prod_db[item] for item in test_order_lists[1]]
+# order_list = [prod_db[item] for item in [108335, 391825, 340367]]
 
 
 item_nodes = [prod_to_node(prod) for prod in order_list]
 start_node = SingleNode(coord=(0, 0), map=map_data)
-end_node = SingleNode(coord=(39, 20), map=map_data)
+end_node = SingleNode(coord=(0, 0), map=map_data)
 all_nodes = [start_node] + item_nodes + [end_node]
 generate_cost_graph(all_nodes)
 
 
-branch_and_bound(nodes=item_nodes, start=start_node, end=end_node)
+_cost, path = branch_and_bound(
+    item_nodes=item_nodes, start_node=start_node, end_node=end_node
+)
+
+real_cost = 0
+for idx in range(len(path) - 1): 
+    curr, next = path[idx], path[idx + 1]
+    real_cost += curr.dv[next][0]
+
+print(real_cost)
+
+print(f"Cost={real_cost}, Path={[ap.coord for ap in path]}")
 
 peak_mem_in_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 peak_mem_str = f"{peak_mem_in_kb} KiB ({(peak_mem_in_kb/1024):0.2f} MiB)"
 print(peak_mem_str)
+
+pass
