@@ -78,6 +78,21 @@ def input_timeout_value(conf: Config):
     print(f"Set timeout value to {timeout_value}s.")
 
 
+def input_start_end_pos(conf: Config):
+    while True:
+        print("Please enter the start position (format: x, y - split by a comma)")
+        start_x, start_y = [int(num) for num in input("> ").split(",")]
+        print("Please enter the end position (format: x, y - split by a comma)")
+        end_x, end_y = [int(num) for num in input("> ").split(",")]
+
+        break
+
+    conf.start_position = (start_x, start_y)
+    conf.end_position = (end_x, end_y)
+    print(f"Set start position to {(start_x, start_y)}.")
+    print(f"Set end position to {(end_x, end_y)}.")
+
+
 settings_menu = Menu(
     text="Settings menu",
     options=[
@@ -93,6 +108,10 @@ settings_menu = Menu(
         (
             "Default timeout value",
             lambda: input_timeout_value(conf=CONF),
+        ),
+        (
+            "Start/End Position",
+            lambda: input_start_end_pos(conf=CONF),
         ),
     ],
 )
@@ -136,9 +155,7 @@ def start_routing(conf: Config):
             "n": "Nearest neighbor",
         }
         print(instr)
-        print(
-            f"Total distance is {total_cost}."
-        )
+        print(f"Total distance is {total_cost}.")
 
         # TODO respect settings
         # Create the directory "reports" if it does not exist yet
