@@ -1,5 +1,6 @@
 import csv
 from math import floor
+import os
 
 """ Configuration Constants """
 # Initializes the map with specific size
@@ -31,12 +32,14 @@ class Config:
         default_algorithm="b",  # branch and bound by default
         start_position=(0, 0),
         end_position=(0, 0),
+        default_timeout_value=60,
     ) -> None:
         self.use_random_item = use_random_item
         self.save_instructions = save_instructions
         self.default_algorithm = default_algorithm
         self.start_position = start_position
         self.end_position = end_position
+        self.default_timeout_value = default_timeout_value
 
 
 # Read data from the file
@@ -99,6 +102,25 @@ def get_item(product_db: dict, id_list: list) -> list[Prod]:
 def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
     return [item.get_location() for item in get_item(product_db, id_list)]
 
+
+# Read order list from the file
+def read_order_file(file_path):
+
+    id = []
+    order_list = []
+
+    if os.path.exists(file_path):      
+        id_index = 1
+        with open(file_path) as csvfile:
+            reader = csv.reader(csvfile, delimiter="\t")
+            for curr in reader:  
+                id.append(id_index)
+                id_index += 1
+                # Make string to list
+                order_list.append([int(num) for num in curr[0].split(",")])
+
+
+    return id, order_list
 def get_aps(map, node: tuple) -> list[tuple[tuple, tuple]]:
     aps = [] #list record dir and ap coord
     directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]

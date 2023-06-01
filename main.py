@@ -15,8 +15,12 @@ CONF = Config(
     default_algorithm="g",
     start_position=(0, 0),
     end_position=(0, 0)
+    default_timeout_value=60,
+
 )
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
+order_list_file = "data/qvBox-warehouse-orders-list-part01.txt"
+
 
 
 """ Settings Menu """
@@ -63,6 +67,19 @@ def input_default_algorithm(conf: Config):
     print(f"Set default algorithm to {algs[str_default_algorithm]}")
 
 
+def input_timeout_value(conf: Config):
+    while True:
+        timeout_value = input_data_as_list(
+        "Please enter the time you're glad to wait. (up to 60 seconds)", "d", 1
+        )[0]
+        if timeout_value < 0 or timeout_value > 60:
+            warn("Please enter a valid number!")
+        else:
+            break
+    conf.default_timeout_value = timeout_value
+    print(f"Set timeout value to {timeout_value}s.")
+
+
 settings_menu = Menu(
     text="Settings menu",
     options=[
@@ -75,6 +92,10 @@ settings_menu = Menu(
             "Default algorithm",
             lambda: input_default_algorithm(conf=CONF),
         ),
+        (
+            "Default timeout value",
+            lambda: input_timeout_value(conf=CONF),
+        ),
     ],
 )
 
@@ -83,32 +104,40 @@ settings_menu = Menu(
 
 
 def start_routing(conf: Config):
+
     # Read inventory data from text file
     map_data, prod_db = read_inventory_data(DATASET)
     cols, rows = len(map_data), len(map_data[0])
 
-    item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[
-        0
-    ]
-    item_ids = input_data_as_list(
-        "Please input IDs of the items you wish to add to list", "d", item_count
-    )
+    # Allow user to input items' id manually or get them from an existing file
+    loc_src = input_data_as_list("Do you want to input the order manually or automatically get it from an existing file? (M/A)", "s", 1)[0]
 
-    # DEBUG FEATURE
-    # Pick random item when specified item ID does not exist
-    if conf.use_random_item:
-        valid_ids = list(prod_db.keys())
-        # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
-        for idx, i in enumerate(item_ids):
-            if i not in valid_ids:
-                # Replace invalid ID with random item
-                random_item_id = item_ids[0]
-                while (
-                    random_item_id in item_ids
-                ):  # Avoid duplicate ID; chance is extremely low
-                    random_item_id = choice(valid_ids)
-                item_ids[idx] = random_item_id
-                debug(f"Item {i} does not exist, replacing it with {random_item_id}! ")
+    while True:
+        match loc_src:
+            case "M":
+
+                item_count = input_data_as_list("How many items would you like to fetch? ", "d", 1)[
+                    0       
+                ]
+                item_ids = input_data_as_list(
+                    "Please input IDs of the items you wish to add to list", "d", item_count
+                )
+
+                # DEBUG FEATURE
+                # Pick random item when specified item ID does not exist
+                if conf.use_random_item:
+                    valid_ids = list(prod_db.keys())
+                    # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
+                    for idx, i in enumerate(item_ids):
+                        if i not in valid_ids:
+                            # Replace invalid ID with random item
+                            random_item_id = item_ids[0]
+                            while (
+                                random_item_id in item_ids
+                            ):  # Avoid duplicate ID; chance is extremely low
+                                random_item_id = choice(valid_ids)
+                            item_ids[idx] = random_item_id
+                            debug(f"Item {i} does not exist, replacing it with {random_item_id}! ")
 
     item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
 
@@ -144,17 +173,134 @@ def start_routing(conf: Config):
     print(instr)
     print(f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm.")
 
-    # TODO respect settings
-    # Create the directory "reports" if it does not exist yet
-    if not os.path.exists("reports"):
-        os.makedirs("reports")
+                # TODO respect settings
+                # Create the directory "reports" if it does not exist yet
+                if not os.path.exists("reports"):
+                    os.makedirs("reports")
 
-    # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
-    # and append .txt extension
-    save_to_file(
-        f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
-        gen_instruction_metadata() + instr,
-    )
+                # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
+                # and append .txt extension
+                save_to_file(
+                    f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
+                    gen_instruction_metadata() + instr,
+                )
+                break
+            case "A":
+                file_path = order_list_file
+                order_id, order_list = read_order_file(file_path)
+                # Check if there's problem with the file
+                if len(order_id) == 0:
+                    warn("The file doesn't exist or it is empty! Please check the file path!")
+                    break
+                order_set = set(order_id)
+                while order_set:
+                    order_choice = input_data_as_list(f"There are {len(order_set)} orders left. Do you want to automatically generate routes for all the left orders", "b", 1)[0]
+                    if order_choice:
+                        for index in order_set:
+                            
+                            item_ids = order_list[index - 1]
+
+                            item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
+                
+                            if len(item_locations) == 0:
+                                warn("The item(s) requested are not available at the moment. ")
+                                return -1
+
+                            total_cost, route = find_route(
+                                map=map_data,
+                                prod_db=prod_db,
+                                start=conf.origin_position,
+                                item_ids=item_ids,
+                                algorithm=conf.default_algorithm,
+                            )
+                            # Draw text map
+                            map_text = draw_text_map(map_data)
+                            # Add route paths to map
+                            map_text = add_paths_to_map(map_text, route, item_locations)
+                            # Add axes to map for easier reading
+                            map_full = add_axes_to_map(map_text, rows, cols)
+
+                            warn("\nWAREHOUSE MAP\n")
+                            print_map(map_full)
+                            algs = {
+                                "b": "Branch and bound",
+                                "g": "Greedy",
+                            }
+                            instr = get_instructions(route=route, prod_db=prod_db, item_ids=item_ids)
+                            print(instr)
+                            print(f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm.")
+
+                            # TODO respect settings
+                            # Create the directory "reports" if it does not exist yet
+                            if not os.path.exists("reports"):
+                                os.makedirs("reports")
+
+                            # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
+                            # and append .txt extension
+                            save_to_file(
+                                f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
+                                gen_instruction_metadata() + instr,
+                            )
+                        break
+                    else:
+                        order_num = input_data_as_list(f"Please give an valid id of order. (1 - {len(order_id)})", "d", 1)[0]
+                        if order_num in order_set:
+
+                            item_ids = order_list[order_num - 1]
+
+                            item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
+
+                            # Remove current order id 
+                            order_set.remove(order_num)
+
+                            if len(item_locations) == 0:
+                                warn("The item(s) requested are not available at the moment. ")
+                                return -1
+
+                            total_cost, route = find_route(
+                                map=map_data,
+                                prod_db=prod_db,
+                                start=conf.origin_position,
+                                item_ids=item_ids,
+                                algorithm=conf.default_algorithm,
+                            )
+                            # Draw text map
+                            map_text = draw_text_map(map_data)
+                            # Add route paths to map
+                            map_text = add_paths_to_map(map_text, route, item_locations)
+                            # Add axes to map for easier reading
+                            map_full = add_axes_to_map(map_text, rows, cols)
+
+                            warn("\nWAREHOUSE MAP\n")
+                            print_map(map_full)
+                            algs = {
+                                "b": "Branch and bound",
+                                "g": "Greedy",
+                            }
+                            instr = get_instructions(route=route, prod_db=prod_db, item_ids=item_ids)
+                            print(instr)
+                            print(f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm.")
+
+                            # TODO respect settings
+                            # Create the directory "reports" if it does not exist yet
+                            if not os.path.exists("reports"):
+                                os.makedirs("reports")
+
+                            # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
+                            # and append .txt extension
+                            save_to_file(
+                                f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
+                                gen_instruction_metadata() + instr,
+                            )
+                        else:
+                            warn("The number is invalid. Please try again!")
+
+                break
+            case _:
+                warn("Please give a correct input! ")
+                loc_src = input(">")
+
+    
 
 
 main_menu = Menu(
