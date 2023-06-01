@@ -7,7 +7,7 @@ from lib.core import *
 from lib.route import *
 from lib.misc import *
 
-VERSION = "beta 0.2"
+VERSION = "Beta 2.0"
 
 CONF = Config(
     use_random_item=True,

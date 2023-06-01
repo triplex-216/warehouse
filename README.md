@@ -1,6 +1,8 @@
 # Warehouse Navigator
 
 ## Release Note
+- **Beta 2.0**
+  
 - **Beta 0.2** (05/25/2023)
   - Support order lists of multiple items. 
   - Add branch-and-bound algorithm. 
