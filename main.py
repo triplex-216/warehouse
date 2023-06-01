@@ -102,6 +102,55 @@ settings_menu = Menu(
 
 
 def start_routing(conf: Config):
+    def process_order(item_ids):
+        item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
+
+        if len(item_locations) == 0:
+            warn("The item(s) requested are not available at the moment. ")
+            return -1
+        # use single node instance
+        start_node = SingleNode(coord=conf.start_position, map=map_data)
+        end_node = SingleNode(coord=conf.end_position, map=map_data)
+        # use prod instance
+        items = get_item(prod_db, item_ids)
+        item_nodes = [prod_to_node(prod) for prod in items]
+        instr, total_cost, route = find_route(
+            item_nodes=item_nodes,
+            start_node=start_node,
+            end_node=end_node,
+            algorithm=conf.default_algorithm,
+        )
+        # Draw text map
+        map_text = draw_text_map(map_data)
+        # Add route paths to map
+        map_text = add_paths_to_map(map_text, route, item_locations)
+        # Add axes to map for easier reading
+        map_full = add_axes_to_map(map_text, rows, cols)
+
+        warn("\nWAREHOUSE MAP\n")
+        print_map(map_full)
+        algs = {
+            "b": "Branch and bound",
+            "g": "Greedy",
+            "n": "Nearest neighbor",
+        }
+        print(instr)
+        print(
+            f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm."
+        )
+
+        # TODO respect settings
+        # Create the directory "reports" if it does not exist yet
+        if not os.path.exists("reports"):
+            os.makedirs("reports")
+
+        # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
+        # and append .txt extension
+        save_to_file(
+            f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
+            gen_instruction_metadata() + instr,
+        )
+
     # Read inventory data from text file
     map_data, prod_db = read_inventory_data(DATASET)
     cols, rows = len(map_data), len(map_data[0])
@@ -125,8 +174,7 @@ def start_routing(conf: Config):
                     item_count,
                 )
 
-                # DEBUG FEATURE
-                # Pick random item when specified item ID does not exist
+                # DEBUG FEATURE: Pick random item when specified item ID does not exist
                 if conf.use_random_item:
                     valid_ids = list(prod_db.keys())
                     # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
@@ -142,196 +190,46 @@ def start_routing(conf: Config):
                             debug(
                                 f"Item {i} does not exist, replacing it with {random_item_id}! "
                             )
-
-                item_locations = get_item_locations(
-                    product_db=prod_db, id_list=item_ids
-                )
-
-                if len(item_locations) == 0:
-                    warn("The item(s) requested are not available at the moment. ")
-                    return -1
-                # use single node instance
-                start_node = SingleNode(coord=conf.start_position, map=map_data)
-                end_node = SingleNode(coord=conf.end_position, map=map_data)
-                # use prod instance
-                items = get_item(prod_db, item_ids)
-                item_nodes = [prod_to_node(prod) for prod in items]
-                instr, total_cost, route = find_route(
-                    item_nodes=item_nodes,
-                    start_node=start_node,
-                    end_node=end_node,
-                    algorithm=conf.default_algorithm,
-                )
-                # Draw text map
-                map_text = draw_text_map(map_data)
-                # Add route paths to map
-                map_text = add_paths_to_map(map_text, route, item_locations)
-                # Add axes to map for easier reading
-                map_full = add_axes_to_map(map_text, rows, cols)
-
-                warn("\nWAREHOUSE MAP\n")
-                print_map(map_full)
-                algs = {
-                    "b": "Branch and bound",
-                    "g": "Greedy",
-                    "n": "Nearest neighbor",
-                }
-                print(instr)
-                print(
-                    f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm."
-                )
-
-                # TODO respect settings
-                # Create the directory "reports" if it does not exist yet
-                if not os.path.exists("reports"):
-                    os.makedirs("reports")
-
-                # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
-                # and append .txt extension
-                save_to_file(
-                    f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
-                    gen_instruction_metadata() + instr,
-                )
+                process_order(item_ids)
                 break
 
             case "A":
+                # TODO Order list must be stored globally to track its fulfillment status
                 file_path = order_list_file
-                order_id, order_list = read_order_file(file_path)
+                order_ids, order_list = read_order_file(file_path)
                 # Check if there's problem with the file
-                if len(order_id) == 0:
+                if len(order_ids) == 0:
                     warn(
                         "The file doesn't exist or it is empty! Please check the file path!"
                     )
                     break
-                order_set = set(order_id)
-                while order_set:
-                    order_choice = input_data_as_list(
-                        f"There are {len(order_set)} orders left. Do you want to automatically generate routes for all the left orders",
-                        "b",
+                order_set = set(order_ids)
+
+                use_custom_order_id = input_data_as_list(
+                    "Do you want to pick a specific order next? ",
+                    "b",
+                    1,
+                )[0]
+
+                if use_custom_order_id:
+                    order_num = input_data_as_list(
+                        f"Please give an valid id of order. (1 - {len(order_ids)})",
+                        "d",
                         1,
                     )[0]
-                    if order_choice:
-                        for index in order_set:
-                            item_ids = order_list[index - 1]
+                else:  # Randomly pick an unhandled order
+                    order_num = choice(list(order_set))
 
-                            item_locations = get_item_locations(
-                                product_db=prod_db, id_list=item_ids
-                            )
-
-                            if len(item_locations) == 0:
-                                warn(
-                                    "The item(s) requested are not available at the moment. "
-                                )
-                                return -1
-
-                            total_cost, route = find_route(
-                                map=map_data,
-                                prod_db=prod_db,
-                                start=conf.origin_position,
-                                item_ids=item_ids,
-                                algorithm=conf.default_algorithm,
-                            )
-                            # Draw text map
-                            map_text = draw_text_map(map_data)
-                            # Add route paths to map
-                            map_text = add_paths_to_map(map_text, route, item_locations)
-                            # Add axes to map for easier reading
-                            map_full = add_axes_to_map(map_text, rows, cols)
-
-                            warn("\nWAREHOUSE MAP\n")
-                            print_map(map_full)
-                            algs = {
-                                "b": "Branch and bound",
-                                "g": "Greedy",
-                            }
-                            instr = path_instructions(
-                                route=route, prod_db=prod_db, item_ids=item_ids
-                            )
-                            print(instr)
-                            print(
-                                f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm."
-                            )
-
-                            # TODO respect settings
-                            # Create the directory "reports" if it does not exist yet
-                            if not os.path.exists("reports"):
-                                os.makedirs("reports")
-
-                            # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
-                            # and append .txt extension
-                            save_to_file(
-                                f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
-                                gen_instruction_metadata() + instr,
-                            )
-                        break
-                    else:
-                        order_num = input_data_as_list(
-                            f"Please give an valid id of order. (1 - {len(order_id)})",
-                            "d",
-                            1,
-                        )[0]
-                        if order_num in order_set:
-                            item_ids = order_list[order_num - 1]
-
-                            item_locations = get_item_locations(
-                                product_db=prod_db, id_list=item_ids
-                            )
-
-                            # Remove current order id
-                            order_set.remove(order_num)
-
-                            if len(item_locations) == 0:
-                                warn(
-                                    "The item(s) requested are not available at the moment. "
-                                )
-                                return -1
-
-                            total_cost, route = find_route(
-                                map=map_data,
-                                prod_db=prod_db,
-                                start=conf.origin_position,
-                                item_ids=item_ids,
-                                algorithm=conf.default_algorithm,
-                            )
-                            # Draw text map
-                            map_text = draw_text_map(map_data)
-                            # Add route paths to map
-                            map_text = add_paths_to_map(map_text, route, item_locations)
-                            # Add axes to map for easier reading
-                            map_full = add_axes_to_map(map_text, rows, cols)
-
-                            warn("\nWAREHOUSE MAP\n")
-                            print_map(map_full)
-                            algs = {
-                                "b": "Branch and bound",
-                                "g": "Greedy",
-                            }
-                            instr = path_instructions(
-                                route=route, prod_db=prod_db, item_ids=item_ids
-                            )
-                            print(instr)
-                            print(
-                                f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm."
-                            )
-
-                            # TODO respect settings
-                            # Create the directory "reports" if it does not exist yet
-                            if not os.path.exists("reports"):
-                                os.makedirs("reports")
-
-                            # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
-                            # and append .txt extension
-                            save_to_file(
-                                f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
-                                gen_instruction_metadata() + instr,
-                            )
-                        else:
-                            warn("The number is invalid. Please try again!")
+                if order_num in order_set:
+                    item_ids = order_list[order_num - 1]
+                    process_order(item_ids)
+                else:
+                    warn("The number is invalid. Please try again!")
 
                 break
             case _:
                 warn("Please give a correct input! ")
-                loc_src = input(">")
+                loc_src = input("> ")
 
 
 main_menu = Menu(
