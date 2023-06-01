@@ -121,7 +121,11 @@ settings_menu = Menu(
 
 
 def start_routing(conf: Config):
-    def process_order(item_ids):
+    def process_order(
+        item_ids,
+        override_start_position: tuple[int, int] = None,
+        override_end_position: tuple[int, int] = None,
+    ):
         item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
 
         if len(item_locations) == 0:
@@ -130,6 +134,10 @@ def start_routing(conf: Config):
         # use single node instance
         start_node = SingleNode(coord=conf.start_position, map=map_data)
         end_node = SingleNode(coord=conf.end_position, map=map_data)
+        if override_start_position:  # If start_position overridden
+            start_node = SingleNode(coord=override_start_position, map=map_data)
+        if override_end_position:  # If end_position overridden
+            end_node = SingleNode(coord=override_end_position, map=map_data)
         # use prod instance
         items = get_item(prod_db, item_ids)
         item_nodes = [prod_to_node(prod) for prod in items]
@@ -191,6 +199,12 @@ def start_routing(conf: Config):
                     "d",
                     item_count,
                 )
+                print(
+                    "Please enter the start position (format: x, y - split by a comma)"
+                )
+                start_x, start_y = [int(num) for num in input("> ").split(",")]
+                print("Please enter the end position (format: x, y - split by a comma)")
+                end_x, end_y = [int(num) for num in input("> ").split(",")]
 
                 # DEBUG FEATURE: Pick random item when specified item ID does not exist
                 if conf.use_random_item:
@@ -208,7 +222,11 @@ def start_routing(conf: Config):
                             debug(
                                 f"Item {i} does not exist, replacing it with {random_item_id}! "
                             )
-                process_order(item_ids)
+                process_order(
+                    item_ids,
+                    override_start_position=(start_x, start_y),
+                    override_end_position=(end_x, end_y),
+                )
                 break
 
             case "A":
