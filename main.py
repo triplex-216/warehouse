@@ -163,6 +163,10 @@ def start_routing(conf: Config):
             case "A":
                 file_path = order_list_file
                 order_id, order_list = read_order_file(file_path)
+                # Check if there's problem with the file
+                if len(order_id) == 0:
+                    warn("The file doesn't exist or it is empty! Please check the file path!")
+                    break
                 order_set = set(order_id)
                 while order_set:
                     order_choice = input_data_as_list(f"There are {len(order_set)} orders left. Do you want to automatically generate routes for all the left orders", "b", 1)[0]

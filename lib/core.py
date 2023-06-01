@@ -1,5 +1,6 @@
 import csv
 from math import floor
+import os
 
 """ Configuration Constants """
 # Initializes the map with specific size
@@ -116,13 +117,16 @@ def read_order_file(file_path):
 
     id = []
     order_list = []
-    id_index = 1
-    with open(file_path) as csvfile:
-        reader = csv.reader(csvfile, delimiter="\t")
-        for curr in reader:  
-            id.append(id_index)
-            id_index += 1
-            # Make string to list
-            order_list.append([int(num) for num in curr[0].split(",")])
+
+    if os.path.exists(file_path):      
+        id_index = 1
+        with open(file_path) as csvfile:
+            reader = csv.reader(csvfile, delimiter="\t")
+            for curr in reader:  
+                id.append(id_index)
+                id_index += 1
+                # Make string to list
+                order_list.append([int(num) for num in curr[0].split(",")])
+
 
     return id, order_list
