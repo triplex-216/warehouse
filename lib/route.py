@@ -331,11 +331,11 @@ def path_instructions(path: list[AccessPoint], start_ap:AccessPoint, end_ap:Acce
 
 def get_step_instructions(trace: list[tuple]):
     """
-    get instructions of a given route
+    get instructions of a given trace
     """
     def get_direction(position, next_position):
         """
-        get route discription of one movement
+        get direction of one movement
         """
         # get direction
         if position[0] > next_position[0]:
