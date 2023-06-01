@@ -5,6 +5,9 @@ import heapq
 from itertools import combinations, product
 from .core import *
 from .bnb import *
+import multiprocessing
+from time import sleep
+
 
 def prod_to_node(prod: Prod):
     return Node(prod.id, (prod.x, prod.y), prod._map)
@@ -47,8 +50,6 @@ def generate_cost_graph(
         # Set distance[(end, start)] = 0 to ensure end to start is connected
         end_ap.dv[start_ap] = (0, [None])
         start_ap.dv[end_ap] = (float("inf"), start_ap.dv[end_ap][1])
-
-    print(f"edges={edges}")
 
 
 def cost(map, start, end) -> tuple[int, list[tuple[int, int]]]:
@@ -257,7 +258,11 @@ def get_step_instructions(trace: list[tuple]):
 
 
 def find_route(
-    item_nodes: list[Node], start_node: SingleNode, end_node: SingleNode, algorithm="g"
+    item_nodes: list[Node],
+    start_node: SingleNode,
+    end_node: SingleNode,
+    algorithm="g",
+    shared_list: list = [],
 ):
     # Calculate the graph(distance and route between all the accessible entries)
     start_ap, end_ap = start_node.aps_all[0], end_node.aps_all[0]
@@ -276,4 +281,50 @@ def find_route(
         total_cost, path = default(nodes, start_ap, end_ap)
 
     instructions, route = path_instructions(path, start_ap, end_ap)
+
+    # Save return values as tuple into shared list for use in timeout monitor function
+    shared_list.append((instructions, total_cost, route))
+
+    return instructions, total_cost, route
+
+
+def timer(timeout: int):
+    sleep(timeout)
+
+
+def find_route_with_timeout(
+    item_nodes: list[Node],
+    start_node: SingleNode,
+    end_node: SingleNode,
+    algorithm: str,
+    timeout: int,
+):
+    manager = multiprocessing.Manager()
+    shared_list = manager.list()
+
+    algorithm_process = multiprocessing.Process(
+        target=find_route,
+        args=(item_nodes, start_node, end_node, algorithm, shared_list),
+    )
+    # timer_process = multiprocessing.Process(target=timer, args=timeout)
+
+    algorithm_process.start()
+    # timer_process.start()
+
+    algorithm_process.join(timeout=timeout)
+    if algorithm_process.is_alive():
+        print(f"Algorithm timed out! Using fallback algorithm...")
+        # If the algorithm is still alive after timeout, terminate the algorithm
+        # and fallback to the default order
+        algorithm_process.terminate()
+        algorithm_process.join()
+
+        instructions, total_cost, route = find_route(
+            item_nodes, start_node, end_node, "f"
+        )
+
+    else:
+        # The algorithm finished successfully before timeout
+        instructions, total_cost, route = shared_list[0]
+
     return instructions, total_cost, route

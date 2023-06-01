@@ -15,7 +15,7 @@ CONF = Config(
     default_algorithm="g",
     start_position=(0, 0),
     end_position=(0, 0),
-    default_timeout_value=60,
+    default_timeout_value=10,
 )
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 order_list_file = "data/qvBox-warehouse-orders-list-part01.txt"
@@ -114,11 +114,12 @@ def start_routing(conf: Config):
         # use prod instance
         items = get_item(prod_db, item_ids)
         item_nodes = [prod_to_node(prod) for prod in items]
-        instr, total_cost, route = find_route(
+        instr, total_cost, route = find_route_with_timeout(
             item_nodes=item_nodes,
             start_node=start_node,
             end_node=end_node,
             algorithm=conf.default_algorithm,
+            timeout=conf.default_timeout_value,
         )
         # Draw text map
         map_text = draw_text_map(map_data)
@@ -136,7 +137,7 @@ def start_routing(conf: Config):
         }
         print(instr)
         print(
-            f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm."
+            f"Total distance is {total_cost}."
         )
 
         # TODO respect settings
