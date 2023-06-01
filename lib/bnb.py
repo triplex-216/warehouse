@@ -58,7 +58,7 @@ Branch and bound algorithm
 def branch_and_bound(
     item_nodes: list[Node | SingleNode],
     start_node: Node | SingleNode,
-    # end_node: Node | SingleNode,
+    end_node: Node | SingleNode,
 ):
     def mark_as_visited(mat: np.ndarray, src_ap_idx: int, dest_ap_idx: int):
         """
@@ -89,8 +89,8 @@ def branch_and_bound(
         return cost
 
     # 1. Process nodes and access points information
-    all_nodes = [start_node] + item_nodes   # S(tart), A, B, ..., E(nd)
-    # all_nodes = [start_node] + item_nodes + [end_node]  # S(tart), A, B, ..., E(nd)
+    # all_nodes = [start_node] + item_nodes  # S(tart), A, B, ..., E(nd)
+    all_nodes = [start_node] + item_nodes + [end_node]  # S(tart), A, B, ..., E(nd)
     # 2. Setup the initial matrix and reduce
     init_mat, dict_ap_to_idx = setup_matrix(nodes=all_nodes)
     # print_matrix(init_mat)
@@ -116,8 +116,12 @@ def branch_and_bound(
         # any node, since it's the first in path)
         mat_copy = init_mat.copy()
         node_col_idx = all_nodes.index(init_node)
-        mat_copy[:, node_col_idx * 4 : (node_col_idx + 1) * 4] = float("inf")
-        
+        # mat_copy[:, node_col_idx * 4 : (node_col_idx + 1) * 4] = float("inf")
+
+        for c in range(node_col_idx * 4, (node_col_idx + 1) * 4):
+            if c != dict_ap_to_idx[ap]:
+                mat_copy[:, c] = float("inf")
+
         for r in range(node_col_idx * 4, (node_col_idx + 1) * 4):
             if r != dict_ap_to_idx[ap]:
                 mat_copy[r] = float("inf")
@@ -146,7 +150,7 @@ def branch_and_bound(
         # Check if all nodes have been visited
         if len(current_tree_node.path) == len(all_nodes):
             best_tree_node = current_tree_node
-            print(calc_path_cost(best_tree_node.path, start_node.aps[0]))
+            # print(calc_path_cost(best_tree_node.path, start_node.aps[0]))
             return best_tree_node.cost, best_tree_node.path
 
         for next_ap, _ in current_ap.dv.items():

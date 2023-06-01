@@ -65,10 +65,10 @@ order_list = [prod_db[item] for item in test_order_lists[1]]
 item_nodes = [prod_to_node(prod) for prod in order_list]
 start_node = SingleNode(coord=(0, 0), map=map_data)
 # end_node = SingleNode(coord=(0, 0), map=map_data)
-# end_node = SingleNode(coord=(20, 11), map=map_data)
-all_nodes = [start_node] + item_nodes 
-# all_nodes = [start_node] + item_nodes + [end_node]
-generate_cost_graph(all_nodes, start_node=start_node)
+end_node = SingleNode(coord=(20, 11), map=map_data)
+# all_nodes = [start_node] + item_nodes
+all_nodes = [start_node] + item_nodes + [end_node]
+generate_cost_graph(all_nodes, start_node=start_node, end_node=end_node)
 
 # instructions, total_cost, route = find_route(item_nodes, start_node, end_node, "n")
 # print(total_cost)
@@ -76,10 +76,11 @@ generate_cost_graph(all_nodes, start_node=start_node)
 
 # np.seterr(all='raise')
 _cost, path = branch_and_bound(
-    item_nodes=item_nodes, start_node=start_node)
+    item_nodes=item_nodes, start_node=start_node, end_node=end_node
+)
 
 instructions, _route = path_instructions(
-    path=path, start_ap=start_node.aps[0]
+    path=path, start_ap=start_node.aps[0], end_ap=end_node.aps[0]
 )
 print(f"Cost={len(_route)}, Path={[ap.coord for ap in path]}")
 print(instructions)

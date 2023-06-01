@@ -313,7 +313,7 @@ def default(nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint):
 
 
 def path_instructions(
-    path: list[AccessPoint], start_ap: AccessPoint
+    path: list[AccessPoint], start_ap: AccessPoint, end_ap: AccessPoint
 ):
     """
     Transfer path to route with every coordinate of passed node contained
