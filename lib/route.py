@@ -30,6 +30,10 @@ def generate_matrix(map, pd_list):
             ):
                 neighbors.append(neighbor)
                 neighbors_index.append(dir.index((x,y)))
+        # Make (0, 0)'s neighbors be itself
+        if node == (0, 0):
+            neighbors = [(0, 0)]
+            neighbors_index = [0]
         return neighbors, neighbors_index
     
     # Get all neighbors and their index in the matrix
@@ -116,9 +120,25 @@ def nodes_cost(matrix, current, x):
     copy_matrix[:, x] = float("inf")
 
     # Get reduce_cost between two nodes
-    reduce_cost, _ = reduced_cost(copy_matrix)
+    reduce_cost, out_matrix = reduced_cost(copy_matrix)
 
-    return reduce_cost + value
+    return reduce_cost + value, out_matrix
+
+# Calculate the current total cost
+def current_cost(matrix, path):
+    reduced_value  = 0 
+    for i in range(len(path) - 1):
+        value, matrix = nodes_cost(matrix, path[i], path[i + 1])
+        reduced_value += value
+    return reduced_value
+
+# Make sure that the input node is not any node's neighbor in node_list
+def check_not_neighbor(node_list, node):
+    
+    for item in node_list:
+        if item // 4 == node // 4:
+            return False
+    return True
 
 # Find the shortest path from a specific start point
 def single_path(ori_reduced_matrix, start_index, single_start):
@@ -143,34 +163,37 @@ def single_path(ori_reduced_matrix, start_index, single_start):
     current = single_start
     path = [current]
     path_cost = 0
-    unvisited.remove(current)
 
-    while unvisited:
-        nearest = min(unvisited, key=lambda x: nodes_cost(copy_matrix, current, x))
+    temp_path = []
+    while len(path) < (len(ori_reduced_matrix) // 4) + 1:
+        visted = set(path)
+        copy_set = unvisited.copy()
+        for node in copy_set:
+            if node not in visted and check_not_neighbor(path, node):
+                # Make a copy
+                copy_path = list(path)
+                copy_matrix_2 = np.copy(copy_matrix)
 
-        # Update the path
-        path.append(nearest)
-        # Update the path_cost
-        path_cost += nodes_cost(copy_matrix, current, nearest)
-        # Update the copy_matrix
-        copy_matrix[current, :] = float("inf")
-        copy_matrix[:, nearest] = float("inf")
+                copy_path.append(node)
+                cur_cost = current_cost(copy_matrix_2, copy_path)
+                heapq.heappush(temp_path, (cur_cost, copy_path))
 
-        # Remove nearest node's neighbors
-        i = nearest // 4
-        for j in range(4):
-            neighbor_index = i * 4 + j
-            if neighbor_index in unvisited and neighbor_index != nearest:
-                unvisited.remove(i * 4 + j)
-                # Update the copy_matrix
-                copy_matrix[i * 4 + j, :] = float("inf")
-                copy_matrix[:, i * 4 + j] = float("inf")
-        
-        unvisited.remove(nearest)
-        current = nearest
+        cur_shortest_path = heapq.heappop(temp_path)
+        path = cur_shortest_path[1]
 
-    # Return to the original start
-    path.append(single_start)
+        if len(path) == len(ori_reduced_matrix) // 4:
+            # Make a copy
+            copy_path = list(path)
+            copy_matrix_2 = np.copy(copy_matrix)
+            copy_path.append(current)
+            cur_cost = current_cost(copy_matrix_2, copy_path)
+            heapq.heappush(temp_path, (cur_cost, copy_path))
+
+            new_shortest_path = heapq.heappop(temp_path)
+            path_cost = new_shortest_path[0]
+            path = new_shortest_path[1]
+
+    #path_cost = current_cost(copy_matrix, path)
 
     return path, path_cost
 
@@ -187,8 +210,9 @@ def branch_and_bound(map, prod_db, item_ids, start = (0,0)):
     main_reduced_cost, ori_reduced_matrix = reduced_cost(ori_matrix)
 
     pd_id = len(locations)
-    # Set a random start point
+    
     start = random.randint(0, pd_id - 1)
+    # start = 0
     
     start_index = []
     for i in range(4):
@@ -225,7 +249,7 @@ def branch_and_bound(map, prod_db, item_ids, start = (0,0)):
         x = locations[node_num[i]][0] + drift[i][0]
         y = locations[node_num[i]][1] + drift[i][1]
 
-        if (x,y) == (1,0) or (x,y) == (0,1):
+        if (x,y) == (-1, 0):
             coord_route.append((0, 0))
         else:
             coord_route.append((x,y))
@@ -293,7 +317,6 @@ def get_neighbors(map, node):
 
     return neighbors
 
-
 def get_distance(map, start_node, end_node):
     """
     get the distance between all accessible entries of two products
@@ -315,7 +338,6 @@ def get_distance(map, start_node, end_node):
 
     return dis
 
-
 def get_graph(map, nodes):
     graph = {}
     for i in range(len(nodes)):
@@ -323,7 +345,6 @@ def get_graph(map, nodes):
             dis = get_distance(map, nodes[i], nodes[j])
             graph = {**graph, **dis}
     return graph
-
 
 def greedy(map, prod_db, item_ids, start=(0, 0)) -> tuple[int, list[tuple[int, int]]]:
     """

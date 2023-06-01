@@ -109,3 +109,20 @@ def get_item(product_db: dict, id_list: list) -> list[Prod]:
 
 def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
     return [item.get_location() for item in get_item(product_db, id_list)]
+
+
+# Read order list from the file
+def read_order_file(file_path):
+
+    id = []
+    order_list = []
+    id_index = 1
+    with open(file_path) as csvfile:
+        reader = csv.reader(csvfile, delimiter="\t")
+        for curr in reader:  
+            id.append(id_index)
+            id_index += 1
+            # Make string to list
+            order_list.append([int(num) for num in curr[0].split(",")])
+
+    return id, order_list
