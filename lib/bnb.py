@@ -58,21 +58,39 @@ Branch and bound algorithm
 def branch_and_bound(
     item_nodes: list[Node | SingleNode],
     start_node: Node | SingleNode,
-    end_node: Node | SingleNode,
+    # end_node: Node | SingleNode,
 ):
     def mark_as_visited(mat: np.ndarray, src_ap_idx: int, dest_ap_idx: int):
         """
         "Visit" an AP by marking the source AP's row and the destination AP's
         column as infinity.
         """
+        src_node_idx = floor(src_ap_idx / 4)
+        dest_node_idx = floor(dest_ap_idx / 4)
 
-        mat[src_ap_idx] = float("inf")
-        mat[:, dest_ap_idx] = float("inf")
+        mat[src_node_idx * 4 : (src_node_idx + 1) * 4] = float("inf")
+        mat[:, dest_node_idx * 4 : (dest_node_idx + 1) * 4] = float("inf")
+
+        for r in range(dest_node_idx * 4, (dest_node_idx + 1) * 4):
+            if r != dest_ap_idx:
+                mat[r] = float("inf")
 
         return mat
 
+    def calc_path_cost(path: list[AccessPoint], start_ap: AccessPoint):
+        start_index = path.index(start_ap)
+        path_corrected = path[start_index:] + path[:start_index]
+
+        cost = 0
+        for idx in range(len(path_corrected) - 1):
+            curr, next = path_corrected[idx], path_corrected[idx + 1]
+            cost += curr.dv[next][0]
+
+        return cost
+
     # 1. Process nodes and access points information
-    all_nodes = [start_node] + item_nodes + [end_node]  # S(tart), A, B, ..., E(nd)
+    all_nodes = [start_node] + item_nodes   # S(tart), A, B, ..., E(nd)
+    # all_nodes = [start_node] + item_nodes + [end_node]  # S(tart), A, B, ..., E(nd)
     # 2. Setup the initial matrix and reduce
     init_mat, dict_ap_to_idx = setup_matrix(nodes=all_nodes)
     # print_matrix(init_mat)
@@ -82,7 +100,11 @@ def branch_and_bound(
     # 3. Start branching
 
     # Randomly pick a node
+    # init_node = start_node
     init_node = choice(all_nodes)
+    # if init_node is start_node:
+    #     init_node = end_node
+
     print(f"Initializing BnB @ {init_node.coord}")
     init_aps = init_node.aps
 
@@ -90,18 +112,27 @@ def branch_and_bound(
     pq = PriorityQueue()
 
     for ap in init_aps:
+        # Set init node column to infinity (can't be visited from
+        # any node, since it's the first in path)
+        mat_copy = init_mat.copy()
+        node_col_idx = all_nodes.index(init_node)
+        mat_copy[:, node_col_idx * 4 : (node_col_idx + 1) * 4] = float("inf")
+        
+        for r in range(node_col_idx * 4, (node_col_idx + 1) * 4):
+            if r != dict_ap_to_idx[ap]:
+                mat_copy[r] = float("inf")
+
         pq.enqueue(
             TreeNode(
                 cost=init_reduced_cost,
                 path=[ap],
-                matrix=init_mat,
+                matrix=mat_copy,
                 parent_tree_node=None,
             ),
             priority=init_reduced_cost,
         )
         # print(f"Enqueued {[ap.coord]}")
 
-    mat = init_mat
     best_tree_node = None
 
     while pq:
@@ -115,6 +146,7 @@ def branch_and_bound(
         # Check if all nodes have been visited
         if len(current_tree_node.path) == len(all_nodes):
             best_tree_node = current_tree_node
+            print(calc_path_cost(best_tree_node.path, start_node.aps[0]))
             return best_tree_node.cost, best_tree_node.path
 
         for next_ap, _ in current_ap.dv.items():
@@ -127,7 +159,7 @@ def branch_and_bound(
                 mat_copy = current_mat.copy()
 
                 # Visit dest_ap and mark src/dest row/col as infinity
-                visit_cost = mat[src_ap_idx][dest_ap_idx]
+                visit_cost = current_mat[src_ap_idx][dest_ap_idx]
                 path_copy.append(next_ap)
                 mark_as_visited(mat_copy, src_ap_idx, dest_ap_idx)
 
@@ -147,8 +179,6 @@ def branch_and_bound(
                 # print(f"Enqueued {[ap.coord for ap in path_copy]}, Cost={next_cost}")
             else:
                 pass
-
-    return best_tree_node.cost, best_tree_node.path
 
 
 def setup_matrix(nodes: list[Node | SingleNode]):

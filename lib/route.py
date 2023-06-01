@@ -171,6 +171,7 @@ def generate_cost_graph(
                 for ap in node.aps:
                     _, path = ap.dv[start_ap]
                     ap.dv[start_ap] = (float("inf"), path)
+                    end_ap.dv[ap] = (float("inf"), path)
         # Set distance[(end, start)] = 0 to ensure end to start is connected
         end_ap.dv[start_ap] = (0, [None])
         start_ap.dv[end_ap] = (float("inf"), start_ap.dv[end_ap][1])
@@ -312,7 +313,7 @@ def default(nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint):
 
 
 def path_instructions(
-    path: list[AccessPoint], start_ap: AccessPoint, end_ap: AccessPoint
+    path: list[AccessPoint], start_ap: AccessPoint
 ):
     """
     Transfer path to route with every coordinate of passed node contained
@@ -321,7 +322,7 @@ def path_instructions(
     instruction_str = ""
     # re-order the path to begin with start and terminate with end
     start_index = path.index(start_ap)
-    path = path[start_index:] + path[:start_index]
+    path = path[start_index:] + path[:start_index] + [start_ap]
     print([ap.coord for ap in path])
 
     ap = path[0]
