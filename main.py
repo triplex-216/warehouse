@@ -262,6 +262,11 @@ main_menu = Menu(
 
 
 def main():
+    map_data, prod_db = read_inventory_data(DATASET)
+    cols, rows = len(map_data), len(map_data[0])
+    map_text = draw_text_map(map_data)
+    print_map(map_text)
+
     main_menu.enter()
 
 
