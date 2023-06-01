@@ -8,6 +8,7 @@
 4. Dynamic start/end locations at any time
    - [x] change graph, distance[(end, start)] = 0 to ensure end to start is connected.
    - [x] every node can not access start, distance[(_, start)] = inf
+   - [ ] end can not go to any ap except start, distance[(end, _)] = inf
    - [ ] change at any time
 5. The timeout should be a specified by the user via a menu setting in seconds (can be decimal/fractions of a second - i.e. 1, 60, 0.25, etc)
 6. - [x] Lazy route(lower turning times)

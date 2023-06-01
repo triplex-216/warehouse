@@ -52,12 +52,12 @@ test_order_lists = [
     ],
 ]
 
-order_list = [prod_db[item] for item in test_order_lists[1]]
+order_list = [prod_db[item] for item in [108335, 391825]]
 
 
 item_nodes = [prod_to_node(prod) for prod in order_list]
 start_node = SingleNode(coord=(0, 0), map=map_data)
-end_node = SingleNode(coord=(7, 11), map=map_data)
+end_node = SingleNode(coord=(0, 20), map=map_data)
 nodes = [start_node] + item_nodes + [end_node]
 
 instructions, total_cost, route = find_route(item_nodes, start_node, end_node, "n")
