@@ -15,11 +15,13 @@ class Config:
         save_instructions=False,
         default_algorithm="b",  # branch and bound by default
         origin_position=(0, 0),
+        default_timeout_value=60,
     ) -> None:
         self.use_random_item = use_random_item
         self.save_instructions = save_instructions
         self.default_algorithm = default_algorithm
         self.origin_position = origin_position
+        self.default_timeout_value = default_timeout_value
 
 
 """ Data processing """

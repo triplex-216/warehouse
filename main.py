@@ -14,6 +14,8 @@ CONF = Config(
     save_instructions=True,
     default_algorithm="g",
     origin_position=(0, 0),
+    default_timeout_value=60,
+
 )
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 order_list_file = "data/qvBox-warehouse-orders-list-part01.txt"
@@ -63,6 +65,19 @@ def input_default_algorithm(conf: Config):
     print(f"Set default algorithm to {algs[str_default_algorithm]}")
 
 
+def input_timeout_value(conf: Config):
+    while True:
+        timeout_value = input_data_as_list(
+        "Please enter the time you're glad to wait. (up to 60 seconds)", "d", 1
+        )[0]
+        if timeout_value < 0 or timeout_value > 60:
+            warn("Please enter a valid number!")
+        else:
+            break
+    conf.default_timeout_value = timeout_value
+    print(f"Set timeout value to {timeout_value}s.")
+
+
 settings_menu = Menu(
     text="Settings menu",
     options=[
@@ -74,6 +89,10 @@ settings_menu = Menu(
         (
             "Default algorithm",
             lambda: input_default_algorithm(conf=CONF),
+        ),
+        (
+            "Default timeout value",
+            lambda: input_timeout_value(conf=CONF),
         ),
     ],
 )
