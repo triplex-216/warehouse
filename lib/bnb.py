@@ -75,15 +75,16 @@ def branch_and_bound(
     all_nodes = [start_node] + item_nodes + [end_node]  # S(tart), A, B, ..., E(nd)
     # 2. Setup the initial matrix and reduce
     init_mat, dict_ap_to_idx = setup_matrix(nodes=all_nodes)
-    print_matrix(init_mat)
+    # print_matrix(init_mat)
     init_mat, init_reduced_cost = reduce_matrix(init_mat)
-    print_matrix(init_mat)
+    # print_matrix(init_mat)
 
     # 3. Start branching
 
     # Randomly pick a node
     init_node = choice(all_nodes)
-    init_aps = init_node.neighbors
+    print(f"Initializing BnB @ {init_node.coord}")
+    init_aps = init_node.aps
 
     # path = []
     pq = PriorityQueue()
@@ -98,7 +99,7 @@ def branch_and_bound(
             ),
             priority=init_reduced_cost,
         )
-        print(f"Enqueued {[ap.coord]}")
+        # print(f"Enqueued {[ap.coord]}")
 
     mat = init_mat
     best_tree_node = None
@@ -143,8 +144,8 @@ def branch_and_bound(
                     ),
                     next_cost,
                 )
-                print(f"Enqueued {[ap.coord for ap in path_copy]}, Cost={next_cost}")
-            else: 
+                # print(f"Enqueued {[ap.coord for ap in path_copy]}, Cost={next_cost}")
+            else:
                 pass
 
     return best_tree_node.cost, best_tree_node.path
@@ -165,36 +166,36 @@ def setup_matrix(nodes: list[Node | SingleNode]):
         node_idx = nodes.index(node)
         rows_range = range(node_idx * 4, node_idx * 4 + 4)
         for r in rows_range:
-            curr_ap = node.neighbors_all[r % 4]
+            curr_ap = node.aps_all[r % 4]
             if curr_ap:  # Continue if current AP exists
                 dict_ap_to_idx[curr_ap] = r  # Record this AP's row number for later use
 
-                for c in range(r, mat_size):
+                for c in range(0, mat_size):
                     dest_node = nodes[floor(c / 4)]
-                    dest_ap = dest_node.neighbors_all[c % 4]
+                    dest_ap = dest_node.aps_all[c % 4]
 
                     if (
                         node is not dest_node and dest_ap
                     ):  # Set grid to cost if destination AP exists
                         mat[r][c] = curr_ap.dv[dest_ap][0]
-                        print(f"({r},{c}) <== {mat[r][c]} ({dest_node.coord})")
+                        # print(f"({r},{c}) <== {mat[r][c]} ({dest_node.coord})")
 
     # Process start/end nodes
     start_node_range = range(0, 4)
     end_node_range = range(mat_size - 4, mat_size)
 
-    for r in start_node_range:
-        for c in end_node_range:
-            mat[r, c] = 0  # Start => End must be 0
+    # for r in start_node_range:
+    #     for c in end_node_range:
+    #         mat[r, c] = 0  # Start => End must be 0
 
-    for r in end_node_range:
-        for c in start_node_range:
-            mat[r, c] = float("inf")  # End => Start must be infinity
+    # for r in end_node_range:
+    #     for c in start_node_range:
+    #         mat[r, c] = float("inf")  # End => Start must be infinity
 
     # Copy the upper half to the lower half
-    row_indices, col_indices = np.triu_indices(mat_size, k=1)
-    for r, c in zip(row_indices, col_indices):
-        mat[c, r] = mat[r, c]
+    # row_indices, col_indices = np.triu_indices(mat_size, k=1)
+    # for r, c in zip(row_indices, col_indices):
+    #     mat[c, r] = mat[r, c]
 
     return mat, dict_ap_to_idx
 
@@ -218,10 +219,13 @@ def reduce_matrix(mat: np.ndarray):
     # Reduce by row
     compressed_mat = compress_minimum_matrix(mat)
     # print_matrix(compressed_mat)
-    row_reduce_costs = [min(row) for row in compressed_mat]
+    row_reduce_costs = [
+        (min(row) if min(row) != float("inf") else 0) for row in compressed_mat
+    ]
     for r, cost in enumerate(row_reduce_costs):
         # print(f"Reducing rows {r*4} ~ {(r+1)*4} by {cost}")
         # print(mat[r * 4 : (r + 1) * 4])
+        # if cost != float("inf"):
         mat[r * 4 : (r + 1) * 4] -= cost
         # print(mat[r * 4 : (r + 1) * 4])
     # print(f"Row reduced cost = {sum(row_reduce_costs)}")
@@ -229,7 +233,9 @@ def reduce_matrix(mat: np.ndarray):
     # Reduce by col
     compressed_mat = compress_minimum_matrix(mat)
     # print_matrix(compressed_mat)
-    col_reduce_costs = [min(col) for col in compressed_mat.T]
+    col_reduce_costs = [
+        (min(col) if min(col) != float("inf") else 0) for col in compressed_mat.T
+    ]
     for c, cost in enumerate(col_reduce_costs):
         # print(f"Reducing cols {c*4} ~ {(c+1)*4} by {cost}")
         # print(mat[:, c * 4 : (c + 1) * 4])

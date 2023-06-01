@@ -22,20 +22,6 @@ class Prod:
     def get_location(self):
         return (self.x, self.y)
 
-    def neighbors(self):
-        if not self._neigh:
-            dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-            row, col = len(self._map), len(self._map[0])
-            for d_x, d_y in dir:
-                neighbor = (self.x + d_x, self.y + d_y)
-                if (
-                    neighbor[0] in range(row)
-                    and neighbor[1] in range(col)
-                    and self._map[neighbor[0]][neighbor[1]] == 0
-                ):
-                    self._neigh.append(neighbor)
-        return self._neigh
-
 
 class Config:
     def __init__(
@@ -43,13 +29,13 @@ class Config:
         use_random_item=False,
         save_instructions=False,
         default_algorithm="b",  # branch and bound by default
-        origin_position=(0, 0),
+        start_position=(0, 0),
         end_position=(0, 0),
     ) -> None:
         self.use_random_item = use_random_item
         self.save_instructions = save_instructions
         self.default_algorithm = default_algorithm
-        self.origin_position = origin_position
+        self.start_position = start_position
         self.end_position = end_position
 
 
@@ -111,4 +97,19 @@ def get_item(product_db: dict, id_list: list) -> list[Prod]:
 
 
 def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
-    return [item.coord for item in get_item(product_db, id_list)]
+    return [item.get_location() for item in get_item(product_db, id_list)]
+
+def get_aps(map, node: tuple) -> list[tuple[tuple, tuple]]:
+    aps = [] #list record dir and ap coord
+    directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+    row, col = len(map), len(map[0])
+    for direction in directions:
+        d_x, d_y = direction
+        neighbor = (node[0] + d_x, node[1] + d_y)
+        if (
+            neighbor[0] in range(row)
+            and neighbor[1] in range(col)
+            and map[neighbor[0]][neighbor[1]] == 0
+        ):
+            aps.append((direction, neighbor))
+    return aps

@@ -44,17 +44,18 @@ def input_default_algorithm(conf: Config):
     algs = {
         "b": "Branch and bound",
         "g": "Greedy",
+        "n": "Nearest neighbor",
     }
 
     str_default_algorithm = input_data_as_list(
-        "Choose a default algorithm of your choice (b/g)\nb - branch and bound; g - greedy",
+        "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy",
         "s",
         1,
     )[0]
     while str_default_algorithm not in algs.keys():
         print(f"Please choose a valid option from b/g")
         str_default_algorithm = input_data_as_list(
-            "Choose a default algorithm of your choice (b/g)\nb - branch and bound; g - greedy",
+            "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy",
             "s",
             1,
         )[0]
@@ -114,16 +115,16 @@ def start_routing(conf: Config):
     if len(item_locations) == 0:
         warn("The item(s) requested are not available at the moment. ")
         return -1
-    # use node instance
-    start = Node(conf.start_position, map_data)
-    end = Node(conf.end_position, map_data)
+    # use single node instance
+    start_node = SingleNode(coord=conf.start_position, map=map_data)
+    end_node = SingleNode(coord=conf.end_position, map=map_data)
     # use prod instance
     items = get_item(prod_db, item_ids)
-    total_cost, route = find_route(
-        map_data=map_data,
-        items=items,
-        start=start,
-        end=end,
+    item_nodes = [prod_to_node(prod) for prod in items]
+    instr, total_cost, route = find_route(
+        item_nodes=item_nodes,
+        start_node=start_node,
+        end_node=end_node,
         algorithm=conf.default_algorithm,
     )
     # Draw text map
@@ -138,8 +139,8 @@ def start_routing(conf: Config):
     algs = {
         "b": "Branch and bound",
         "g": "Greedy",
+        "n": "Nearest neighbor",
     }
-    instr = get_instructions(route=route, prod_db=prod_db, item_ids=item_ids)
     print(instr)
     print(f"Total distance is {total_cost} using {algs[conf.default_algorithm]} algorithm.")
 
