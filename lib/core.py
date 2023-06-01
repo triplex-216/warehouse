@@ -99,17 +99,17 @@ def get_item(product_db: dict, id_list: list) -> list[Prod]:
 def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
     return [item.get_location() for item in get_item(product_db, id_list)]
 
-def get_aps(map, node):
-    neighbors = []
-    dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+def get_aps(map, node: tuple) -> list[tuple[tuple, tuple]]:
+    aps = [] #list record dir and ap coord
+    directions = [(1, 0), (-1, 0), (0, 1), (0, -1)]
     row, col = len(map), len(map[0])
-    for d_x, d_y in dir:
+    for direction in directions:
+        d_x, d_y = direction
         neighbor = (node[0] + d_x, node[1] + d_y)
         if (
             neighbor[0] in range(row)
             and neighbor[1] in range(col)
             and map[neighbor[0]][neighbor[1]] == 0
         ):
-            neighbors.append(neighbor)
-
-    return neighbors
+            aps.append((direction, neighbor))
+    return aps

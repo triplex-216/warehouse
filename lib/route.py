@@ -56,9 +56,8 @@ class Node:
         # Detect valid neighbors (access points)
         aps = get_aps(self._map, self.coord)
         # Assign each neighbor to a direction (n/s/e/w)
-        for ap in aps:
-            offset = (ap[0] - self.coord[0], ap[1] - self.coord[1])
-            match offset:
+        for direction, ap in aps:
+            match direction:
                 case (1, 0):
                     self._ap["n"] = AccessPoint(coord=ap, parent=self)
                 case (0, 1):
@@ -188,11 +187,13 @@ def cost(map, start, end) -> tuple[int, list[tuple[int, int]]]:
     route = []
     # Initialize the distance dictionary with the starting node and a cost of 0
     distance = {start: 0}
+    turn_num = {start: 0}
+    coming_dir = {start: None}
     # Initialize the priority queue with the starting node and its cost
     open_set = [(0, start)]
     while open_set:
         # Get the node with the lowest cost from the priority queue
-        current_node = heapq.heappop(open_set)[1]
+        current_node = heapq.heappop(open_set)[-1]
 
         if current_node == end:
             while current_node in parent:
@@ -204,14 +205,22 @@ def cost(map, start, end) -> tuple[int, list[tuple[int, int]]]:
             return (costs, route[::-1])
 
         # Check each neighbor of the current node
-        for neighbor in get_aps(map, current_node):
+        for dir, neighbor in get_aps(map, current_node):
             # Calculate the tentative cost to reach the neighbor
             tentative_dis = distance[current_node] + 1
+            # Calculate the number of turns to reach the neighbor
+            if dir != coming_dir[current_node]:
+                tentative_turns = turn_num[current_node] + 1
+            else:
+                tentative_turns = turn_num[current_node]
             # If the neighbor is not in the open set or the tentative cost is less than the existing cost, add it to the open set
             if tentative_dis < distance.get(neighbor, float("inf")):
                 distance[neighbor] = tentative_dis
-                heapq.heappush(open_set, (tentative_dis, neighbor))
+                turn_num[neighbor] = tentative_turns
+                heapq.heappush(open_set, (tentative_dis, tentative_turns, neighbor))
                 parent[neighbor] = current_node
+                coming_dir[neighbor] = dir
+
 
     print(f"Path from {start} to {end} not found, check if it is a shelf!")
     return None
