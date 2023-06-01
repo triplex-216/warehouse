@@ -322,7 +322,7 @@ def path_instructions(
     instruction_str = ""
     # re-order the path to begin with start and terminate with end
     start_index = path.index(start_ap)
-    path = path[start_index:] + path[:start_index] + [start_ap]
+    path = path[start_index:] + path[:start_index]
     print([ap.coord for ap in path])
 
     ap = path[0]
