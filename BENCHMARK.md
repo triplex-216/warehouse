@@ -24,17 +24,17 @@ This document describes the setup and inputs used during tests, as well as the r
 
 # Test Results
 
-| Size | B&B    | Greedy |
-| ---- | ------ | ------ |
-| 1    | 0.025s | 0.003s |
-| 5    | 0.161s | 0.046s |
-| 10   | 0.601s | 0.062s |
-| 15   | 2.900s | 0.318s |
-| 20   | 8.261s | 0.677s |
+| Size | B&B    | Nearest Neighbor |
+| ---- | ------ | ---------------- |
+| 1    | 0.034s | 0.033s           |
+| 2    | 0.053s | 0.046s           |
+| 3    | 0.061s | 0.038s           |
+| 4    | 0.255s | 0.060s           |
+| 5    | 0.661s | 0.098s           |
 
-Peak memory usage: 41548 KiB (40.57 MiB)
+Peak memory usage: 46952 KiB (45.85 MiB)
 
-Note: Greedy algorithm does not necessarily produce the optimal route, however it can easily meet the 15-seconds time constraint of the application. 
+Note: Nearest Neighbor algorithm does not necessarily produce the optimal route, however it can easily meet the 15-seconds time constraint of the application. 
 
 # Test Case Reference Graph
 ![Test Case #1](figures/Figure_1.png)
