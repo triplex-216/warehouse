@@ -1,6 +1,14 @@
 # Warehouse Navigator
 
 ## Release Note
+- **Beta 2.0** (06/01/2023)
+  - Support Branch-and-bound algorithm with multiple access. 
+    - Will fall-back to the default algorithm upon timeout. 
+  
+  - Support reading and processing order lists stored in files
+  
+  - Redesigned data structure to efficiently calculate graphs
+  
 - **Beta 0.2** (05/25/2023)
   - Support order lists of multiple items. 
   - Add branch-and-bound algorithm. 

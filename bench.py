@@ -3,6 +3,7 @@ import timeit
 from math import floor
 from lib.core import read_inventory_data
 from lib.route import *
+from random import sample
 
 TEST_CASES = [
     [108335],
@@ -49,7 +50,7 @@ TEST_CASES = [
     ],
 ]
 DEFAULT_REPS = (
-    10  # Default repetitions to test each algorithm and calculate an average time
+    5  # Default repetitions to test each algorithm and calculate an average time
 )
 
 
@@ -72,23 +73,34 @@ if __name__ == "__main__":
 
     # testing phase
 
-    greedy_times = []
+    nn_times = []
     bab_times = []
-    for idx, order in enumerate(TEST_CASES):
-        print(f"Testing greedy with input {order}...")
-        greedy_times.append(
+    test_cases_truncated = []
+    for idx, case in enumerate(TEST_CASES):
+        test_cases_truncated.append(sample(case, idx + 1))
+    for idx, order in enumerate(test_cases_truncated):
+        # if len(order) >= 5:
+        #     order = sample(order, k=5)  # limit to 5 inputs for bnb's sake
+
+        items = get_item(prod_db, order)
+        item_nodes = [prod_to_node(prod) for prod in items]
+        start_node = SingleNode(coord=(0, 0), map=warehouse_map)
+        end_node = SingleNode(coord=(0, 0), map=warehouse_map)
+
+        print(f"Testing nearest neighbor with input {order}...")
+        nn_times.append(
             get_avg_runtime(
-                lambda: greedy(
-                    map=warehouse_map, prod_db=prod_db, item_ids=order, start=(0, 0)
-                ),
+                lambda: find_route_with_timeout(
+                    item_nodes, start_node, end_node, "n", 5
+                )
             )
         )
-        print(f"Testing B&B with input {order}...")
+        print(f"Testing BnB with input {order}...")
         bab_times.append(
             get_avg_runtime(
-                lambda: branch_and_bound(
-                    map=warehouse_map, prod_db=prod_db, item_ids=order, start=(0, 0)
-                ),
+                lambda: find_route_with_timeout(
+                    item_nodes, start_node, end_node, "b", 5
+                )
             )
         )
 
@@ -98,14 +110,14 @@ if __name__ == "__main__":
     print("\nTest Report: \n============\n")
     print(f"Average execution time of branch and bound: ")
     for idx, t in enumerate(bab_times):
-        print(f"Size={len(TEST_CASES[idx])}: {t:.6f} seconds ({TEST_CASES[idx]})")
+        print(f"Size={len(test_cases_truncated[idx])}: {t:.6f} seconds ({test_cases_truncated[idx]})")
     print(f"Average execution time of greedy: ")
-    for idx, t in enumerate(greedy_times):
-        print(f"Size={len(TEST_CASES[idx])}: {t:.6f} seconds ({TEST_CASES[idx]})")
+    for idx, t in enumerate(nn_times):
+        print(f"Size={len(test_cases_truncated[idx])}: {t:.6f} seconds ({test_cases_truncated[idx]})")
 
     print("\nComparison: ")
     print("Size\t|B&B\t|Greedy")  # Header
-    for idx, t in enumerate(zip(bab_times, greedy_times)):
-        print(f"{len(TEST_CASES[idx])}\t|{t[0]:.3f}s\t|{t[1]:.3f}s")
+    for idx, t in enumerate(zip(bab_times, nn_times)):
+        print(f"{len(test_cases_truncated[idx])}\t|{t[0]:.3f}s\t|{t[1]:.3f}s")
 
     print(f"Peak memory usage: {m}")

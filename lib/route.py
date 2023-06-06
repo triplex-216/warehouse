@@ -1,19 +1,75 @@
+# Resolves class type hinting itself, see https://stackoverflow.com/a/33533514
+from __future__ import annotations
+
 import heapq
-from .core import get_item, get_item_locations
-from .branch_and_bound import branch_and_bound
-def cost(map, start, end):
+from itertools import combinations, product
+from .core import *
+from .bnb import *
+import multiprocessing
+from time import sleep
+
+
+def prod_to_node(prod: Prod):
+    return Node(prod.id, (prod.x, prod.y), prod._map)
+
+
+def generate_cost_graph(
+    nodes: list[Node], start_node: SingleNode = None, end_node: SingleNode = None
+) -> None:
+    """
+    Calculate and store costs between all possible AccessPoint pairs between
+    all pairs of nodes from nodes_list.
+    e.g. For each of the 16 pairs from the 8 APs: A{n,e,s,w} and B{n,e,s,w},
+    calculate 16 distances and store in AccessPoints' distance vectors.
+
+    start_node and end_node can be absent
+    """
+    edges = 0
+    for a, b in combinations(nodes, 2):
+        ap_1: AccessPoint  # Type hints for IDE
+        ap_2: AccessPoint
+        for ap_1, ap_2 in product(a.aps, b.aps):
+            # Skip if the AP pair has been calculated
+            if ap_2 in ap_1.dv.keys():
+                continue
+
+            dist, route = cost(a._map, ap_1.coord, ap_2.coord)
+            ap_1.add_path(destination=ap_2, distance=dist, path=route)
+            edges += 1
+            # print(f"{ap_1.coord} -> {ap_2.coord}: {dist}")
+
+    if start_node and end_node:
+        start_ap, end_ap = start_node.aps[0], end_node.aps[0]
+        # Set distance[(node, start)] = inf to ensure no one can access start
+        for node in nodes:
+            if node != start_node:
+                for ap in node.aps:
+                    _, path = ap.dv[start_ap]
+                    ap.dv[start_ap] = (float("inf"), path)
+                    end_ap.dv[ap] = (float("inf"), path)
+        # Set distance[(end, start)] = 0 to ensure end to start is connected
+        end_ap.dv[start_ap] = (0, [None])
+        start_ap.dv[end_ap] = (float("inf"), start_ap.dv[end_ap][1])
+
+
+def cost(map, start, end) -> tuple[int, list[tuple[int, int]]]:
     """
     calculate distance and shortest route between two single entries
     """
+    if not start or not end:
+        return (float("inf"), [None])
+
     parent = {}
     route = []
     # Initialize the distance dictionary with the starting node and a cost of 0
     distance = {start: 0}
+    turn_num = {start: 0}
+    coming_dir = {start: None}
     # Initialize the priority queue with the starting node and its cost
-    visited_set = [(0, start)]
-    while visited_set:
+    open_set = [(0, start)]
+    while open_set:
         # Get the node with the lowest cost from the priority queue
-        current_node = heapq.heappop(visited_set)[1]
+        current_node = heapq.heappop(open_set)[-1]
 
         if current_node == end:
             while current_node in parent:
@@ -25,158 +81,143 @@ def cost(map, start, end):
             return (costs, route[::-1])
 
         # Check each neighbor of the current node
-        for neighbor in get_neighbors(map, current_node):
+        for dir, neighbor in get_aps(map, current_node):
             # Calculate the tentative cost to reach the neighbor
             tentative_dis = distance[current_node] + 1
+            # Calculate the number of turns to reach the neighbor
+            if dir != coming_dir[current_node]:
+                tentative_turns = turn_num[current_node] + 1
+            else:
+                tentative_turns = turn_num[current_node]
             # If the neighbor is not in the open set or the tentative cost is less than the existing cost, add it to the open set
             if tentative_dis < distance.get(neighbor, float("inf")):
                 distance[neighbor] = tentative_dis
-                heapq.heappush(visited_set, (tentative_dis, neighbor))
+                turn_num[neighbor] = tentative_turns
+                heapq.heappush(open_set, (tentative_dis, tentative_turns, neighbor))
                 parent[neighbor] = current_node
+                coming_dir[neighbor] = dir
 
-    print(f"Can not get to position{end}, check if it is a shelf!")
+    print(f"Path from {start} to {end} not found, check if it is a shelf!")
     return None
 
-def get_neighbors(map, node):
-    neighbors = []
-    dir = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-    row, col = len(map), len(map[0])
-    for d_x, d_y in dir:
-        neighbor = (node[0] + d_x, node[1] + d_y)
-        if (
-            neighbor[0] in range(row)
-            and neighbor[1] in range(col)
-            and map[neighbor[0]][neighbor[1]] == 0
-        ):
-            neighbors.append(neighbor)
 
-    return neighbors
-
-
-def get_distance(map, node1, node2, start=(0,0), end=(0,0)):
+def greedy(
+    nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint, init_ap: AccessPoint
+):
     """
-    get the dictionary records the distances between all accessible entries of two nodes
+    give a list of nodes, return the greedy route
     """
-    dis = {}
-    if node1 == start or node1 == end:
-        positions1 = [node1]
-    else:
-        positions1 = get_neighbors(map, node1)
-    
-    if node2 == start or node2 == end:
-        positions2 = [node2]
-    else:
-        positions2 = get_neighbors(map, node2)
-
-    for p1 in positions1:
-        for p2 in positions2:
-            dis[(p1, p2)] = cost(map, p1, p2)
-            dis[(p2, p1)] = cost(map, p2, p1)
-
-    return dis
-
-
-def get_graph(map, nodes, start=(0,0), end=(0,0)):
-    """
-    get the whole graph(distance and route) of every product pair
-    """
-    graph = {}
-    for i in range(len(nodes)):
-        for j in range(i + 1, len(nodes)):
-            dis = get_distance(map, nodes[i], nodes[j], start, end)
-            graph = {**graph, **dis}
-    return graph
-
-
-def greedy(graph, items, start=(0, 0), end=(0,0)) -> tuple[int, list[tuple[int, int]]]:
-    """
-    give a list of item to be fetched, return the greedy route
-    """
-    route = [start]
+    # Init path, path is a list of ap
+    if init_ap == start_ap:
+        init_ap = end_ap
+    path = [init_ap]
+    # Init unvisited set
+    unvisited = set(nodes)
+    unvisited.remove(init_ap.parent)
     total_cost = 0
 
-    while items:
-        current = route[-1]
+    while unvisited:
+        current = path[-1]
+        # end_node should always go to start_node
+        if current == end_ap:
+            path.append(start_ap)
+            unvisited.remove(start_ap.parent)
+            current = start_ap
+
         nearest_neighbor = None
         nearest_distance = float("inf")
+        # search every access points of unvisited nodes
+        for node in unvisited:
+            ap: AccessPoint
+            for ap in node.aps:
+                if ap not in path:
+                    dist, _trace = current.dv[ap]
+                    if dist < nearest_distance:
+                        nearest_neighbor = ap
+                        nearest_distance = dist
 
-        for item in items:
-            for neighbor in item.neighbors():
-                dist, trace = graph[(current, neighbor)]
-
-                if neighbor not in route and dist < nearest_distance:
-                    nearest_neighbor = neighbor
-                    nearest_distance = dist
-                    nearest_trace = trace
-
-        if nearest_neighbor is not None:
-            route += nearest_trace[1:]
+        if nearest_neighbor:
+            path.append(nearest_neighbor)
             total_cost += nearest_distance
-            #remove visited items
-            for item in items:
-                if nearest_neighbor in item.neighbors():
-                    items.remove(item)
+            # remove visited
+            unvisited.remove(nearest_neighbor.parent)
         else:
             # No unvisited neighbors found, the graph might be disconnected
             break
 
-    # Add the back route to complete the cycle
-    back_cost, back_route = graph[(route[-1], end)]
-    total_cost += back_cost
-    route += back_route[1:]
+    # Add the back cost to complete the cycle
+    dist, _trace = path[-1].dv[init_ap]
+    total_cost += dist
 
-    return total_cost, route
+    return total_cost, path
 
-def nearest_neighbor(graph, items, start=(0, 0), end=(0,0)):
 
-    pass
-def default(graph, items, start=(0, 0), end=(0,0)):
-    route = [start]
+def nearest_neighbor(nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint):
+    all_path = []
+    for node in nodes:
+        for ap in node.aps:
+            cost, path = greedy(nodes, start_ap, end_ap, ap)
+            heapq.heappush(all_path, (cost, id(path), path))
+
+    bestcost, _id, bestpath = heapq.heappop(all_path)
+    return bestcost, bestpath
+
+
+def default(nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint):
+    path = [start_ap]
     total_cost = 0
-    visited = {start}
+    curr = path[-1]
 
-    for item in items:
-        for neighbor in item.neighbors():
-            if neighbor in route:
-                visited.add(item)
-                break
-        if item not in visited:
-            cost, trace = graph[(route[-1], item.neighbors()[0])]
-            route += trace[1:]
-            total_cost += cost
-    
+    for node in nodes[1:]:
+        # access node though first not None ap
+        next = node.aps[0]
+        path.append(next)
+        # record cost
+        cost, trace = curr.dv[next]
+        total_cost += cost
+        # update curr
+        curr = path[-1]
+
     # Add the back route to complete the cycle
-    back_cost, back_route = graph[(route[-1], end)]
-    total_cost += back_cost
-    route += back_route[1:]
+    dist, _trace = path[-1].dv[start_ap]
+    total_cost += dist
 
-    return total_cost, route
+    return total_cost, path
 
-def path_to_route(map, path: list[tuple]):
+
+def path_instructions(
+    path: list[AccessPoint], start_ap: AccessPoint, end_ap: AccessPoint
+):
     """
-    Transfer path to route with every passed node contained
+    Transfer path to route with every coordinate of passed node contained
     """
-    total_cost = 0
-    route = []
-    pos = path[0]
-    for next_pos in path[1:]:
-        dis, trace = cost(map, pos, next_pos)
-        total_cost += dis
-        route += trace[:-1]
-        pos = next_pos
-    route.append(path[-1])
+    route = [start_ap.coord]
+    instruction_str = ""
+    # re-order the path to begin with start and terminate with end
+    start_index = path.index(start_ap)
+    path = path[start_index:] + path[:start_index]
+    print([ap.coord for ap in path])
 
-    return total_cost, route
+    ap = path[0]
+    for next in path[1:]:
+        trace = ap.dv[next][1]
+        route += trace[1:]
+        instruction_str += get_step_instructions(trace)
+        if next.parent.id == -1:
+            instruction_str += "Return to the end position!\n"
+        else:
+            instruction_str += f"Pick up the product {next.parent.id}!\n"
+        ap = next
 
-def get_instructions(route: list, prod_db: dict, item_ids: list):
+    return instruction_str, route
+
+
+def get_step_instructions(trace: list[tuple]):
     """
     get instructions of a given route
     """
 
-    instruction_str = ""
-    items = get_item(prod_db, item_ids)
-
-    def get_step_instruction(position, next_position):
+    def get_direction(position, next_position):
         """
         get route discription of one movement
         """
@@ -189,67 +230,101 @@ def get_instructions(route: list, prod_db: dict, item_ids: list):
             dir = "down"
         elif position[1] < next_position[1]:
             dir = "up"
-
         return dir
 
-    def is_prod_entry(pos):
-        pickup = []
-        for item in items:
-            if pos in item.neighbors():
-                pickup.append(item.id)
-                items.remove(item)
-        return pickup
-
+    instruction_str = ""
     # if there are only one node in the route
-    if len(route) == 1:
-        instruction_str += "You can pick up the product at current position!\n"
-        return
+    if len(trace) == 1:
+        return instruction_str
 
-    start, next_pos = route[0], route[1]
-    instruction = get_step_instruction(start, next_pos)
-    dis = 1
-    cnt = 0
+    start, next_pos = trace[0], trace[1]
+    direction = get_direction(start, next_pos)
+    step = 1
 
-    for idx in range(1, len(route) - 1):
-        pos, next_pos = route[idx], route[idx + 1]
-        new_instruction = get_step_instruction(pos, next_pos)
-        pickup = is_prod_entry(pos)
-        cnt += len(pickup)
-        if pickup:
-            instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
-            instruction_str += f"Pick up the product {pickup}!\n"
-            instruction = new_instruction
-            start = pos
-            dis = 1
+    for idx in range(1, len(trace) - 1):
+        pos, next_pos = trace[idx], trace[idx + 1]
+        new_direction = get_direction(pos, next_pos)
+        # if two idr are the same
+        if new_direction == direction:
+            step += 1
         else:
-            # if two idr are the same
-            if new_instruction == instruction:
-                dis += 1
-            else:
-                instruction_str += f"From {start} move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {pos}\n"
-                instruction = new_instruction
-                start = pos
-                dis = 1
-    instruction_str += f"From {start}, move {dis} {'steps' if dis > 1 else 'step'} {instruction} to {next_pos}\n"
-    instruction_str += "Return to the start position!\n"
+            instruction_str += f"From {start} move {step} {'steps' if step > 1 else 'step'} {direction} to {pos}\n"
+            direction = new_direction
+            start = pos
+            step = 1
+    instruction_str += f"From {start}, move {step} {'steps' if step > 1 else 'step'} {direction} to {next_pos}\n"
 
     return instruction_str
 
-def find_route(map, prod_db, item_ids, start=(0,0), end=(0,0), algorithm="g"):
+
+def find_route(
+    item_nodes: list[Node],
+    start_node: SingleNode,
+    end_node: SingleNode,
+    algorithm="g",
+    shared_list: list = [],
+):
     # Calculate the graph(distance and route between all the accessible entries)
-    all_nodes = [start] + get_item_locations(prod_db, item_ids) + [end]
-    graph = get_graph(map, all_nodes)
-    items = get_item(prod_db, item_ids)
-    
+    start_ap, end_ap = start_node.aps_all[0], end_node.aps_all[0]
+    nodes = [start_node] + item_nodes + [end_node]
+    generate_cost_graph(nodes, start_node=start_node, end_node=end_node)
+
     if algorithm == "b":  # branch and bound
-        total_cost, route = branch_and_bound(map=map, prod_db=prod_db, item_ids=item_ids, start=start)
+        total_cost, path = branch_and_bound(
+            item_nodes=item_nodes, start_node=start_node, end_node=end_node
+        )
     elif algorithm == "g":  # greedy
-        total_cost, route = greedy(
-            graph=graph, items=items, start=start
-        )
+        total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
+    elif algorithm == "n":
+        total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
     elif algorithm == "f":  # fallback
-        total_cost, route = default(
-            graph=graph, items=items, start=start
+        total_cost, path = default(nodes, start_ap, end_ap)
+
+    instructions, route = path_instructions(path, start_ap, end_ap)
+
+    # Save return values as tuple into shared list for use in timeout monitor function
+    shared_list.append((instructions, total_cost, route))
+
+    return instructions, total_cost, route
+
+
+def timer(timeout: int):
+    sleep(timeout)
+
+
+def find_route_with_timeout(
+    item_nodes: list[Node],
+    start_node: SingleNode,
+    end_node: SingleNode,
+    algorithm: str,
+    timeout: int,
+):
+    manager = multiprocessing.Manager()
+    shared_list = manager.list()
+
+    algorithm_process = multiprocessing.Process(
+        target=find_route,
+        args=(item_nodes, start_node, end_node, algorithm, shared_list),
+    )
+    # timer_process = multiprocessing.Process(target=timer, args=timeout)
+
+    algorithm_process.start()
+    # timer_process.start()
+
+    algorithm_process.join(timeout=timeout)
+    if algorithm_process.is_alive():
+        print(f"Algorithm timed out! Using fallback algorithm...")
+        # If the algorithm is still alive after timeout, terminate the algorithm
+        # and fallback to the default order
+        algorithm_process.terminate()
+        algorithm_process.join()
+
+        instructions, total_cost, route = find_route(
+            item_nodes, start_node, end_node, "f"
         )
-    
-    return total_cost, route
+
+    else:
+        # The algorithm finished successfully before timeout
+        instructions, total_cost, route = shared_list[0]
+
+    return instructions, total_cost, route

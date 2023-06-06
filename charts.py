@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from lib.core import read_inventory_data
-from lib.route import get_distance, get_neighbors
+from lib.route import get_distance, get_aps
 
 warehouse_map, prod_db = read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt")
 
@@ -104,9 +104,9 @@ def plot_graph(nodes: dict):
             distances_to_aps = dict()
             for other_node, (other_x, other_y) in nodes.items():
                 if node != other_node:
-                    src_neighbors, dest_neighbors = get_neighbors(
+                    src_neighbors, dest_neighbors = get_aps(
                         warehouse_map, nodes[node]
-                    ), get_neighbors(warehouse_map, nodes[other_node])
+                    ), get_aps(warehouse_map, nodes[other_node])
 
                     distances = get_distance(
                         warehouse_map, nodes[node], nodes[other_node]
