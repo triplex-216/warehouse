@@ -21,14 +21,14 @@ class PriorityQueue:
     def is_empty(self):
         return len(self._queue) == 0
 
-    def enqueue(self, item, priority):
-        heapq.heappush(self._queue, (priority, self._index, item))
+    def enqueue(self, item, priority1, priority2):
+        heapq.heappush(self._queue, (priority1, priority2, self._index, item))
         self._index += 1
 
     def dequeue(self):
         if self.is_empty():
             raise IndexError("Priority queue is empty")
-        _, _, item = heapq.heappop(self._queue)
+        _, _, _, item = heapq.heappop(self._queue)
         return item
 
 
@@ -56,9 +56,9 @@ Branch and bound algorithm
 
 
 def branch_and_bound(
-    item_nodes: list[Node | SingleNode],
-    start_node: Node | SingleNode,
-    end_node: Node | SingleNode,
+    nodes: list[Node | SingleNode],
+    start_ap: AccessPoint,
+    end_ap: AccessPoint,
 ):
     def mark_as_visited(mat: np.ndarray, src_ap_idx: int, dest_ap_idx: int):
         """
@@ -71,71 +71,37 @@ def branch_and_bound(
         mat[src_node_idx * 4 : (src_node_idx + 1) * 4] = float("inf")
         mat[:, dest_node_idx * 4 : (dest_node_idx + 1) * 4] = float("inf")
 
-        for r in range(dest_node_idx * 4, (dest_node_idx + 1) * 4):
-            if r != dest_ap_idx:
-                mat[r] = float("inf")
+        # for r in range(dest_node_idx * 4, (dest_node_idx + 1) * 4):
+        #     if r != dest_ap_idx:
+        #         mat[r] = float("inf")
 
         return mat
 
-    def calc_path_cost(path: list[AccessPoint], start_ap: AccessPoint):
-        start_index = path.index(start_ap)
-        path_corrected = path[start_index:] + path[:start_index]
-
-        cost = 0
-        for idx in range(len(path_corrected) - 1):
-            curr, next = path_corrected[idx], path_corrected[idx + 1]
-            cost += curr.dv[next][0]
-
-        return cost
-
-    # 1. Process nodes and access points information
-    # all_nodes = [start_node] + item_nodes  # S(tart), A, B, ..., E(nd)
-    all_nodes = [start_node] + item_nodes + [end_node]  # S(tart), A, B, ..., E(nd)
-    # 2. Setup the initial matrix and reduce
-    init_mat, dict_ap_to_idx = setup_matrix(nodes=all_nodes)
+    # 1. Setup the initial matrix and reduce
+    init_mat, dict_ap_to_idx = setup_matrix(nodes=nodes)
     # print_matrix(init_mat)
     init_mat, init_reduced_cost = reduce_matrix(init_mat)
     # print_matrix(init_mat)
-
     # 3. Start branching
-
-    # Randomly pick a node
-    # init_node = start_node
-    init_node = choice(all_nodes)
-    # if init_node is start_node:
-    #     init_node = end_node
-
+    # Randomly pick an ap
+    init_node = choice(nodes)
     print(f"Initializing BnB @ {init_node.coord}")
     init_aps = init_node.aps
 
-    # path = []
     pq = PriorityQueue()
 
     for ap in init_aps:
-        # Set init node column to infinity (can't be visited from
-        # any node, since it's the first in path)
-        mat_copy = init_mat.copy()
-        node_col_idx = all_nodes.index(init_node)
-        # mat_copy[:, node_col_idx * 4 : (node_col_idx + 1) * 4] = float("inf")
-
-        for c in range(node_col_idx * 4, (node_col_idx + 1) * 4):
-            if c != dict_ap_to_idx[ap]:
-                mat_copy[:, c] = float("inf")
-
-        for r in range(node_col_idx * 4, (node_col_idx + 1) * 4):
-            if r != dict_ap_to_idx[ap]:
-                mat_copy[r] = float("inf")
-
+        path = [ap]
         pq.enqueue(
             TreeNode(
                 cost=init_reduced_cost,
                 path=[ap],
-                matrix=mat_copy,
+                matrix=init_mat,
                 parent_tree_node=None,
             ),
-            priority=init_reduced_cost,
+            priority1=init_reduced_cost,
+            priority2=1/len(path),
         )
-        # print(f"Enqueued {[ap.coord]}")
 
     best_tree_node = None
 
@@ -146,24 +112,29 @@ def branch_and_bound(
 
         current_path = current_tree_node.path
         current_mat = current_tree_node.matrix
-
+        init_ap = current_path[0]
+        next_aps = []
         # Check if all nodes have been visited
-        if len(current_tree_node.path) == len(all_nodes):
+        if len(current_tree_node.path) == len(nodes)+1:
             best_tree_node = current_tree_node
-            # print(calc_path_cost(best_tree_node.path, start_node.aps[0]))
-            return best_tree_node.cost, best_tree_node.path
+            return best_tree_node.cost, best_tree_node.path[:-1]
+        elif len(current_tree_node.path) == len(nodes):
+            next_aps = [init_ap] # add back route
+        else:
+            for ap in current_ap.dv.keys():
+                if ap.parent != init_ap.parent:
+                    next_aps.append(ap)
 
-        for next_ap, _ in current_ap.dv.items():
-            if next_ap.parent not in current_tree_node.visited_nodes:
-                src_ap_idx = dict_ap_to_idx[current_ap]
-                dest_ap_idx = dict_ap_to_idx[next_ap]
-
+        for next_ap in next_aps:
+            src_ap_idx = dict_ap_to_idx[current_ap]
+            dest_ap_idx = dict_ap_to_idx[next_ap]
+            visit_cost = current_mat[src_ap_idx][dest_ap_idx]
+            if visit_cost != float("inf"):
                 # Create data copies
                 path_copy = copy(current_path)
                 mat_copy = current_mat.copy()
 
                 # Visit dest_ap and mark src/dest row/col as infinity
-                visit_cost = current_mat[src_ap_idx][dest_ap_idx]
                 path_copy.append(next_ap)
                 mark_as_visited(mat_copy, src_ap_idx, dest_ap_idx)
 
@@ -179,6 +150,7 @@ def branch_and_bound(
                         parent_tree_node=current_tree_node,
                     ),
                     next_cost,
+                    1/len(path_copy)
                 )
                 # print(f"Enqueued {[ap.coord for ap in path_copy]}, Cost={next_cost}")
             else:
@@ -213,23 +185,6 @@ def setup_matrix(nodes: list[Node | SingleNode]):
                     ):  # Set grid to cost if destination AP exists
                         mat[r][c] = curr_ap.dv[dest_ap][0]
                         # print(f"({r},{c}) <== {mat[r][c]} ({dest_node.coord})")
-
-    # Process start/end nodes
-    start_node_range = range(0, 4)
-    end_node_range = range(mat_size - 4, mat_size)
-
-    # for r in start_node_range:
-    #     for c in end_node_range:
-    #         mat[r, c] = 0  # Start => End must be 0
-
-    # for r in end_node_range:
-    #     for c in start_node_range:
-    #         mat[r, c] = float("inf")  # End => Start must be infinity
-
-    # Copy the upper half to the lower half
-    # row_indices, col_indices = np.triu_indices(mat_size, k=1)
-    # for r, c in zip(row_indices, col_indices):
-    #     mat[c, r] = mat[r, c]
 
     return mat, dict_ap_to_idx
 

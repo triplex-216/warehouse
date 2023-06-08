@@ -41,6 +41,7 @@ def generate_cost_graph(
     if start_node and end_node:
         start_ap, end_ap = start_node.aps[0], end_node.aps[0]
         # Set distance[(node, start)] = inf to ensure no one can access start
+        # Set distance[(end, node)] = inf to ensure end can not access any node exept start
         for node in nodes:
             if node != start_node:
                 for ap in node.aps:
@@ -270,12 +271,10 @@ def find_route(
     generate_cost_graph(nodes, start_node=start_node, end_node=end_node)
 
     if algorithm == "b":  # branch and bound
-        total_cost, path = branch_and_bound(
-            item_nodes=item_nodes, start_node=start_node, end_node=end_node
-        )
+        total_cost, path = branch_and_bound(nodes, start_ap, end_ap)
     elif algorithm == "g":  # greedy
         total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
-    elif algorithm == "n":
+    elif algorithm == "n": # nearest neighbor
         total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
     elif algorithm == "f":  # fallback
         total_cost, path = default(nodes, start_ap, end_ap)
