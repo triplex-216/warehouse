@@ -1,5 +1,5 @@
 import resource
-import matplotlib.pyplot as plt
+import time
 from lib.core import *
 from lib.route import *
 from lib.tui import *
@@ -58,7 +58,10 @@ test_order_lists = [
 ]
 
 # order_list = [prod_db[item] for item in test_order_lists[2]]
-order_list = [prod_db[item] for item in sample(test_order_lists[2], k=6)]
+ids = [736830, 208660, 10438, 633, 68048, 105912, 5329]
+ids = sample(test_order_lists[4], k=7)
+print(ids)
+order_list = [prod_db[item] for item in ids]
 # order_list = [prod_db[item] for item in [108335, 391825, 340367]]
 # order_list = [prod_db[item] for item in [108335, 391825]]
 
@@ -71,38 +74,32 @@ end_node = SingleNode(coord=(20, 20), map=map_data)
 # all_nodes = [start_node] + item_nodes
 all_nodes = [start_node] + item_nodes + [end_node]
 generate_cost_graph(all_nodes, start_node=start_node, end_node=end_node)
-
-# instructions, total_cost, route = find_route(item_nodes, start_node, end_node, "n")
-# print(total_cost)
+start = time.time()
+bnb_instr, bnb_total_cost, bnb_route = find_route(
+        item_nodes=item_nodes,
+        start_node=start_node,
+        end_node=end_node,
+        algorithm='b',
+)
+# print(f"Cost={len(_route)}, Path={[ap.coord for ap in path]}")
 # print(instructions)
-
-# np.seterr(all='raise')
-_cost, path = branch_and_bound(
-    item_nodes=item_nodes, start_node=start_node, end_node=end_node
-)
-
-instructions, _route = path_instructions(
-    path=path, start_ap=start_node.aps[0], end_ap=end_node.aps[0]
-)
-print(f"Cost={len(_route)}, Path={[ap.coord for ap in path]}")
-print(instructions)
-
+print(f"BnB use {time.time() - start} seconds")
 
 peak_mem_in_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 peak_mem_str = f"{peak_mem_in_kb} KiB ({(peak_mem_in_kb/1024):0.2f} MiB)"
 print(peak_mem_str)
 
 
-# Draw text map
-map_text = draw_text_map(map_data)
-# Add route paths to map
-map_text = add_paths_to_map(map_text, _route, item_locations)
-# Add axes to map for easier reading
-map_full = add_axes_to_map(map_text, rows, cols)
+# # Draw text map
+# map_text = draw_text_map(map_data)
+# # Add route paths to map
+# map_text = add_paths_to_map(map_text, bnb_route, item_locations)
+# # Add axes to map for easier reading
+# map_full = add_axes_to_map(map_text, rows, cols)
 
-warn("\nWAREHOUSE MAP\n")
-print_map(map_full)
-print(instructions)
+# warn("\nWAREHOUSE MAP\n")
+# print_map(map_full)
+# print(bnb_instr)
 
 # NN
 nn_instr, nn_total_cost, nn_route = find_route(
@@ -111,17 +108,15 @@ nn_instr, nn_total_cost, nn_route = find_route(
         end_node=end_node,
         algorithm='n',
 )
-# Draw text map
-map_text = draw_text_map(map_data)
-# Add route paths to map
-map_text = add_paths_to_map(map_text, nn_route, item_locations)
-# Add axes to map for easier reading
-map_full = add_axes_to_map(map_text, rows, cols)
-print_map(map_full)
-print(nn_instr)
-print(f"Total distance is {len(_route)} using BnB algorithm.")
+# # Draw text map
+# map_text = draw_text_map(map_data)
+# # Add route paths to map
+# map_text = add_paths_to_map(map_text, nn_route, item_locations)
+# # Add axes to map for easier reading
+# map_full = add_axes_to_map(map_text, rows, cols)
+# print_map(map_full)
+# print(nn_instr)
+print(f"Total distance is {len(bnb_route)} using BnB algorithm.")
 print(f"Total distance is {len(nn_route)} using Nearest-Neighbor algorithm.")
-
-print(item_locations)
 
 pass
