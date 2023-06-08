@@ -6,16 +6,12 @@ from lib.route import Node, AccessPoint, SingleNode
 def generate_population(
     item_nodes: list[Node], size: int = 10
 ) -> list[list[AccessPoint]]:
-    population = None
+    population = []
     for i in range(size):
         # Get a random access points of each node
         aps = [choice(n.aps) for n in item_nodes]
-        ap_coordinates = [ap.coord for ap in aps]
-        if population == None:
-            population = sample(list(permutations(aps)), k=1)
-        else:
-            population += sample(list(permutations(aps)), k=1)
-    population = [list(p) for p in population]  # Convert from tuple to list
+        population.append(sample(list(aps), k=len(aps)))
+
     return population
 
 
@@ -71,7 +67,7 @@ def crossover(a: list[AccessPoint], b: list[AccessPoint], start_node: SingleNode
     return better_child
 
 
-def genetic(item_nodes, start_node, end_node, rounds=10) -> tuple[list[list[AccessPoint]], list[float]]:
+def genetic(item_nodes, start_node, end_node, rounds) -> tuple[list[list[AccessPoint]], list[float]]:
     def show_individual(individual, start_node, end_node):
         individual_path = start_node.aps + individual + end_node.aps
         return f"{[n.coord for n in individual_path]}"
@@ -89,11 +85,11 @@ def genetic(item_nodes, start_node, end_node, rounds=10) -> tuple[list[list[Acce
     n = size
     for r in range(rounds):
         
-        # print(f"\nRound {r + 1}/{rounds}")
+        print(f"\nRound {r + 1}/{rounds}")
         # Cross over best 2 
         # print("\nCross over stage: ")
         for _ in range(int(n/2)):
-            a, b = sorted(population, key=lambda i: gt_cost(i, start_node, end_node))[:2]
+            [a, b] = sample(sorted(population, key=lambda i: gt_cost(i, start_node, end_node)), k=2)
             child = crossover(a, b, start_node, end_node)
             # print(
             #    f"{show_individual(child, start_node, end_node)} <== {show_individual(a, start_node, end_node)}, {show_individual(b, start_node, end_node)}"
