@@ -100,7 +100,7 @@ def branch_and_bound(
                 parent_tree_node=None,
             ),
             priority1=init_reduced_cost,
-            priority2=1/len(path),
+            priority2=1 / len(path),
         )
 
     best_tree_node = None
@@ -115,11 +115,11 @@ def branch_and_bound(
         init_ap = current_path[0]
         next_aps = []
         # Check if all nodes have been visited
-        if len(current_tree_node.path) == len(nodes)+1:
+        if len(current_tree_node.path) == len(nodes) + 1:
             best_tree_node = current_tree_node
             return best_tree_node.cost, best_tree_node.path[:-1]
         elif len(current_tree_node.path) == len(nodes):
-            next_aps = [init_ap] # add back route
+            next_aps = [init_ap]  # add back route
         else:
             for ap in current_ap.dv.keys():
                 if ap.parent != init_ap.parent:
@@ -150,7 +150,7 @@ def branch_and_bound(
                         parent_tree_node=current_tree_node,
                     ),
                     next_cost,
-                    1/len(path_copy)
+                    1 / len(path_copy),
                 )
                 # print(f"Enqueued {[ap.coord for ap in path_copy]}, Cost={next_cost}")
             else:
@@ -190,49 +190,24 @@ def setup_matrix(nodes: list[Node | SingleNode]):
 
 
 def reduce_matrix(mat: np.ndarray):
-    def compress_minimum_matrix(mat: np.ndarray):
-        compressed_mat_size = int(mat_size / 4)
-        compressed_mat = np.full(
-            shape=(compressed_mat_size, compressed_mat_size),
-            fill_value=float("inf"),
-        )
-        for r in range(compressed_mat_size):
-            for c in range(compressed_mat_size):
-                # For each 4x4 block, get local minimum
-                block = mat[r * 4 : (r + 1) * 4, c * 4 : (c + 1) * 4]
-                compressed_mat[r][c] = block.min()
-        return compressed_mat
-
     mat_size = mat.shape[0]
 
     # Reduce by row
-    compressed_mat = compress_minimum_matrix(mat)
-    # print_matrix(compressed_mat)
-    row_reduce_costs = [
-        (min(row) if min(row) != float("inf") else 0) for row in compressed_mat
-    ]
-    for r, cost in enumerate(row_reduce_costs):
-        # print(f"Reducing rows {r*4} ~ {(r+1)*4} by {cost}")
-        # print(mat[r * 4 : (r + 1) * 4])
-        # if cost != float("inf"):
-        mat[r * 4 : (r + 1) * 4] -= cost
-        # print(mat[r * 4 : (r + 1) * 4])
-    # print(f"Row reduced cost = {sum(row_reduce_costs)}")
+    row_reduce_costs = 0
+    for i in range(int(mat_size / 4)):
+        row_reduced = mat[i * 4 : i * 4 + 4, :].min()
+        if row_reduced != float("inf"):
+            row_reduce_costs += row_reduced
+            mat[i * 4 : i * 4 + 4, :] -= row_reduced
 
-    # Reduce by col
-    compressed_mat = compress_minimum_matrix(mat)
-    # print_matrix(compressed_mat)
-    col_reduce_costs = [
-        (min(col) if min(col) != float("inf") else 0) for col in compressed_mat.T
-    ]
-    for c, cost in enumerate(col_reduce_costs):
-        # print(f"Reducing cols {c*4} ~ {(c+1)*4} by {cost}")
-        # print(mat[:, c * 4 : (c + 1) * 4])
-        mat[:, c * 4 : (c + 1) * 4] -= cost
-        # print(mat[:, c * 4 : (c + 1) * 4])
-    # print(f"Column reduced cost = {sum(col_reduce_costs)}")
+    col_reduce_costs = 0
+    for i in range(int(mat_size / 4)):
+        col_reduced = mat[:, i * 4 : i * 4 + 4].min()
+        if col_reduced != float("inf"):
+            col_reduce_costs += col_reduced
+            mat[:, i * 4 : i * 4 + 4] -= col_reduced
 
-    total_cost = sum(row_reduce_costs) + sum(col_reduce_costs)
+    total_cost = row_reduce_costs + col_reduce_costs
     # print(f"Finished reducing matrix. Cost = {total_cost}")
     # print_matrix(compress_minimum_matrix(mat))
     return mat, total_cost
