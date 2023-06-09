@@ -56,7 +56,7 @@ test_order_lists = [
 
 
 def run_bnb():
-    item_nodes = [prod_to_node(prod_db[item]) for item in test_order_lists[2][:]]
+    item_nodes = [prod_to_node(prod_db[item]) for item in test_order_lists[1][:]]
 
     start_node = SingleNode(coord=(0, 0), map=map_data)
     end_node = SingleNode(coord=(20, 20), map=map_data)
@@ -143,6 +143,7 @@ if __name__ == "__main__":
 
     print(f"Failed Cases: {failed_cases}")
 
+    # run_bnb()
     import cProfile
 
     cProfile.run("run_bnb()")

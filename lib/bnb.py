@@ -4,6 +4,7 @@ from .route import Node, SingleNode, AccessPoint
 from random import choice
 from math import floor
 from copy import deepcopy, copy
+from numba import jit, njit, prange
 
 import heapq
 
@@ -85,6 +86,7 @@ def branch_and_bound(
     # 3. Start branching
     # Randomly pick an ap
     init_node = choice(nodes)
+    # init_node = nodes[0]
     print(f"Initializing BnB @ {init_node.coord}")
     init_aps = init_node.aps
 
@@ -188,7 +190,7 @@ def setup_matrix(nodes: list[Node | SingleNode]):
 
     return mat, dict_ap_to_idx
 
-
+@jit(nopython=True)
 def reduce_matrix(mat: np.ndarray):
     mat_size = mat.shape[0]
 
@@ -196,14 +198,14 @@ def reduce_matrix(mat: np.ndarray):
     row_reduce_costs = 0
     for i in range(int(mat_size / 4)):
         row_reduced = mat[i * 4 : i * 4 + 4, :].min()
-        if row_reduced != float("inf"):
+        if row_reduced != np.inf:
             row_reduce_costs += row_reduced
             mat[i * 4 : i * 4 + 4, :] -= row_reduced
 
     col_reduce_costs = 0
     for i in range(int(mat_size / 4)):
         col_reduced = mat[:, i * 4 : i * 4 + 4].min()
-        if col_reduced != float("inf"):
+        if col_reduced != np.inf:
             col_reduce_costs += col_reduced
             mat[:, i * 4 : i * 4 + 4] -= col_reduced
 
