@@ -1,5 +1,7 @@
 from .core import Config
 from numpy import transpose
+
+
 class Menu:
     """
     Menu to be displayed in the TUI (text user interface).
@@ -95,11 +97,16 @@ def input_data_as_list(text: str, form: str, count: int) -> list:
         case "f":
             form_description = "number"
         case "s":
-            form_description = "text"
+            form_description = ""
         case "b":
             form_description = "Y/N"
 
-    print(f"{text} ({form_description})")
+    print(text, end="")
+    if form != "s": 
+        print(f"({form_description})")
+    else: 
+        print("")
+
     for c in range(count):
         while True:  # Re-prompt for input if fails
             # print(format_hint)
@@ -159,7 +166,7 @@ def debug(text=""):
 def draw_text_map(map_data: list[list[int]]):
     # Initialize ASCII map buffer
     cols, rows = len(map_data), len(map_data[0])
-    map_text = [["__"] * (rows) for _ in range(cols)] #40*21 2-d list
+    map_text = [["__"] * (rows) for _ in range(cols)]  # 40*21 2-d list
 
     for x in range(cols):
         for y in range(rows):
@@ -240,7 +247,6 @@ def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False
 
 # Print generated text maps
 def print_map(full_map: str):
-
     # print the new list
     for row in reversed(transpose(full_map)):
         print(" ".join(row))

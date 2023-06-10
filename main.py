@@ -101,7 +101,7 @@ def show_current_config(conf: Config):
     warn("Showing current config: ")
     print(f"Use random item: {conf.use_random_item}")
     print(f"Save instructions to file: {conf.save_instructions}")
-    print(f"Default algorith: {ALGS[conf.default_algorithm]}")
+    print(f"Default algorithm: {ALGS[conf.default_algorithm]}")
     print(f"Start position: {conf.start_position}")
     print(f"End position: {conf.end_position}")
     print(f"Time out (seconds): {conf.default_timeout_value}")
@@ -258,7 +258,7 @@ def start_routing(conf: Config):
 
                 if use_custom_order_id:
                     order_num = input_data_as_list(
-                        f"Please give an valid id of order. (1 - {len(order_ids)})",
+                        f"Please give an valid id of order (1 - {len(order_ids)}) ",
                         "d",
                         1,
                     )[0]
