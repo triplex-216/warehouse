@@ -18,8 +18,15 @@ CONF = Config(
     end_position=(0, 0),
     default_timeout_value=10,
 )
-DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
-order_list_file = "data/qvBox-warehouse-orders-list-part01.txt"
+
+ALGS = {
+    "b": "Branch and bound",
+    "g": "Greedy",
+    "n": "Nearest neighbor",
+}
+
+DATASET_FILE = "data/qvBox-warehouse-data-s23-v01.txt"
+ORDER_LIST_FILE = "data/qvBox-warehouse-orders-list-part01.txt"
 
 signal.signal(signal.SIGINT, signal.SIG_DFL) # Catches KeyboardInterrupt and prevents it from raising an error. 
 
@@ -45,18 +52,14 @@ def input_config_save_instructions(conf: Config):
 
 
 def input_default_algorithm(conf: Config):
-    algs = {
-        "b": "Branch and bound",
-        "g": "Greedy",
-        "n": "Nearest neighbor",
-    }
+
 
     str_default_algorithm = input_data_as_list(
         "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy",
         "s",
         1,
     )[0]
-    while str_default_algorithm not in algs.keys():
+    while str_default_algorithm not in ALGS.keys():
         print(f"Please choose a valid option from b/g")
         str_default_algorithm = input_data_as_list(
             "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy",
@@ -64,7 +67,7 @@ def input_default_algorithm(conf: Config):
             1,
         )[0]
     conf.default_algorithm = str_default_algorithm
-    print(f"Set default algorithm to {algs[str_default_algorithm]}")
+    print(f"Set default algorithm to {ALGS[str_default_algorithm]}")
 
 
 def input_timeout_value(conf: Config):
@@ -94,6 +97,14 @@ def input_start_end_pos(conf: Config):
     print(f"Set start position to {(start_x, start_y)}.")
     print(f"Set end position to {(end_x, end_y)}.")
 
+def show_current_config(conf: Config): 
+    warn("Showing current config: ")
+    print(f"Use random item: {conf.use_random_item}")
+    print(f"Save instructions to file: {conf.save_instructions}")
+    print(f"Default algorith: {ALGS[conf.default_algorithm]}")
+    print(f"Start position: {conf.start_position}")
+    print(f"End position: {conf.end_position}")
+    print(f"Time out (seconds): {conf.default_timeout_value}")
 
 settings_menu = Menu(
     text="Settings menu",
@@ -115,6 +126,7 @@ settings_menu = Menu(
             "Start/End Position",
             lambda: input_start_end_pos(conf=CONF),
         ),
+        ("Show current configs", lambda: show_current_config(conf=CONF),)
     ],
 )
 
@@ -159,11 +171,6 @@ def start_routing(conf: Config):
 
         warn("\nWAREHOUSE MAP\n")
         print_map(map_full)
-        algs = {
-            "b": "Branch and bound",
-            "g": "Greedy",
-            "n": "Nearest neighbor",
-        }
         print(instr)
         print(f"Total distance is {total_cost}.")
 
@@ -180,7 +187,7 @@ def start_routing(conf: Config):
         )
 
     # Read inventory data from text file
-    map_data, prod_db = read_inventory_data(DATASET)
+    map_data, prod_db = read_inventory_data(DATASET_FILE)
     cols, rows = len(map_data), len(map_data[0])
 
     # Allow user to input items' id manually or get them from an existing file
@@ -233,7 +240,7 @@ def start_routing(conf: Config):
 
             case "A":
                 # TODO Order list must be stored globally to track its fulfillment status
-                file_path = order_list_file
+                file_path = ORDER_LIST_FILE
                 order_ids, order_list = read_order_file(file_path)
                 # Check if there's problem with the file
                 if len(order_ids) == 0:
@@ -282,7 +289,7 @@ main_menu = Menu(
 
 
 def main():
-    map_data, prod_db = read_inventory_data(DATASET)
+    map_data, prod_db = read_inventory_data(DATASET_FILE)
     cols, rows = len(map_data), len(map_data[0])
     map_text = draw_text_map(map_data)
     print_map(map_text)
