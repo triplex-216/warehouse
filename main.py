@@ -8,7 +8,7 @@ from lib.core import *
 from lib.route import *
 from lib.misc import *
 
-VERSION = "Beta 2.0"
+VERSION = "Final"
 
 CONF = Config(
     use_random_item=True,
@@ -130,51 +130,50 @@ settings_menu = Menu(
     ],
 )
 
-
-""" Main Menu """
-
+""" Start """
 
 def start_routing(conf: Config):
-    def process_order(
-        item_ids,
-        override_start_position: tuple[int, int] = None,
-        override_end_position: tuple[int, int] = None,
-    ):
-        item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
+    # Read inventory data from text file
+    map_data, prod_db = read_inventory_data(DATASET_FILE)
+    cols, rows = len(map_data), len(map_data[0])
+    # Get item ids from user input
+    item_ids, override_start_position, override_end_position = get_item_ids(map_data, prod_db, conf)
+    item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
+    if len(item_locations) == 0:
+        warn("The item(s) requested are not available at the moment. ")
+        return -1
+    # use prod instance
+    items = get_item(prod_db, item_ids)
+    item_nodes = [prod_to_node(prod) for prod in items]
+    # use single node instance
+    start_node = SingleNode(coord=conf.start_position, map=map_data)
+    end_node = SingleNode(coord=conf.end_position, map=map_data)
+    if override_start_position:  # If start_position overridden
+        start_node = SingleNode(coord=override_start_position, map=map_data)
+    if override_end_position:  # If end_position overridden
+        end_node = SingleNode(coord=override_end_position, map=map_data)
+    
+    instr, total_cost, route = find_route_with_timeout(
+        item_nodes=item_nodes,
+        start_node=start_node,
+        end_node=end_node,
+        algorithm=conf.default_algorithm,
+        timeout=conf.default_timeout_value,
+    )
+    # Draw text map
+    map_text = draw_text_map(map_data)
+    # Add route paths to map
+    map_text = add_paths_to_map(map_text, route, item_locations)
+    # Add axes to map for easier reading
+    map_full = add_axes_to_map(map_text, rows, cols)
 
-        if len(item_locations) == 0:
-            warn("The item(s) requested are not available at the moment. ")
-            return -1
-        # use single node instance
-        start_node = SingleNode(coord=conf.start_position, map=map_data)
-        end_node = SingleNode(coord=conf.end_position, map=map_data)
-        if override_start_position:  # If start_position overridden
-            start_node = SingleNode(coord=override_start_position, map=map_data)
-        if override_end_position:  # If end_position overridden
-            end_node = SingleNode(coord=override_end_position, map=map_data)
-        # use prod instance
-        items = get_item(prod_db, item_ids)
-        item_nodes = [prod_to_node(prod) for prod in items]
-        instr, total_cost, route = find_route_with_timeout(
-            item_nodes=item_nodes,
-            start_node=start_node,
-            end_node=end_node,
-            algorithm=conf.default_algorithm,
-            timeout=conf.default_timeout_value,
-        )
-        # Draw text map
-        map_text = draw_text_map(map_data)
-        # Add route paths to map
-        map_text = add_paths_to_map(map_text, route, item_locations)
-        # Add axes to map for easier reading
-        map_full = add_axes_to_map(map_text, rows, cols)
+    # Show result
+    warn("\nWAREHOUSE MAP\n")
+    print_map(map_full)
+    print(instr)
+    print(f"Total distance is {total_cost}.")
 
-        warn("\nWAREHOUSE MAP\n")
-        print_map(map_full)
-        print(instr)
-        print(f"Total distance is {total_cost}.")
-
-        # TODO respect settings
+    if conf.save_instructions:
         # Create the directory "reports" if it does not exist yet
         if not os.path.exists("reports"):
             os.makedirs("reports")
@@ -186,10 +185,10 @@ def start_routing(conf: Config):
             gen_instruction_metadata() + instr,
         )
 
-    # Read inventory data from text file
-    map_data, prod_db = read_inventory_data(DATASET_FILE)
-    cols, rows = len(map_data), len(map_data[0])
 
+def get_item_ids(map_data, prod_db, conf: Config):
+    override_start_position = None
+    override_end_position = None
     # Allow user to input items' id manually or get them from an existing file
     loc_src = input_data_as_list(
         "Do you want to input the order manually or automatically get it from an existing file? (M/A)",
@@ -208,12 +207,28 @@ def start_routing(conf: Config):
                     "d",
                     item_count,
                 )
-                print(
-                    "Please enter the start position (format: x, y - split by a comma)"
-                )
-                start_x, start_y = [int(num) for num in input("> ").split(",")]
-                print("Please enter the end position (format: x, y - split by a comma)")
-                end_x, end_y = [int(num) for num in input("> ").split(",")]
+                change_pos = input_data_as_list(
+                    "Do you want to change the start/end position now? (y/n)",
+                    "s",
+                    1,
+                )[0]
+                if change_pos == 'y':
+                    while True:
+                        print(
+                            "Please enter the start position (format: x, y - split by a comma)"
+                        )
+                        override_start_position = tuple(int(num) for num in input("> ").split(","))
+                        if is_not_shelve(map_data, override_start_position):
+                            break
+                        else:
+                            print(f"Position {override_start_position} is a shelve, please re-enter another position.")
+                    while True:
+                        print("Please enter the end position (format: x, y - split by a comma)")
+                        override_end_position = tuple(int(num) for num in input("> ").split(","))
+                        if is_not_shelve(map_data, override_end_position):
+                            break
+                        else:
+                            print(f"Position {override_end_position} is a shelve, please re-enter another position.")
 
                 # DEBUG FEATURE: Pick random item when specified item ID does not exist
                 if conf.use_random_item:
@@ -231,11 +246,6 @@ def start_routing(conf: Config):
                             debug(
                                 f"Item {i} does not exist, replacing it with {random_item_id}! "
                             )
-                process_order(
-                    item_ids,
-                    override_start_position=(start_x, start_y),
-                    override_end_position=(end_x, end_y),
-                )
                 break
 
             case "A":
@@ -257,25 +267,26 @@ def start_routing(conf: Config):
                 )[0]
 
                 if use_custom_order_id:
-                    order_num = input_data_as_list(
+                    order_id = input_data_as_list(
                         f"Please give an valid id of order (1 - {len(order_ids)}) ",
                         "d",
                         1,
                     )[0]
                 else:  # Randomly pick an unhandled order
-                    order_num = choice(list(order_set))
+                    order_id = choice(list(order_set))
 
-                if order_num in order_set:
-                    item_ids = order_list[order_num - 1]
-                    process_order(item_ids)
+                if order_id in order_set:
+                    item_ids = order_list[order_id - 1]
                 else:
                     warn("The number is invalid. Please try again!")
-
                 break
             case _:
                 warn("Please give a correct input! ")
                 loc_src = input("> ")
+    
+    return item_ids, override_start_position, override_end_position
 
+""" Main Menu """
 
 main_menu = Menu(
     text=f"Warehouse Navigator {VERSION}",
