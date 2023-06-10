@@ -105,8 +105,6 @@ def input_data_as_list(text: str, form: str, count: int) -> list:
             # print(format_hint)
             count_hint = f"({c+1}/{count}) "
             res = input(f"> {count_hint if count > 1 else ''}")
-            if res == "q" or res == "Q":
-                return -1
 
             # Handle response with correct format
             try:
