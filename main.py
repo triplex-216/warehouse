@@ -136,54 +136,65 @@ def start_routing(conf: Config):
     # Read inventory data from text file
     map_data, prod_db = read_inventory_data(DATASET_FILE)
     cols, rows = len(map_data), len(map_data[0])
-    # Get item ids from user input
-    item_ids, override_start_position, override_end_position = get_item_ids(map_data, prod_db, conf)
-    item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
-    if len(item_locations) == 0:
-        warn("The item(s) requested are not available at the moment. ")
-        return -1
-    # use prod instance
-    items = get_item(prod_db, item_ids)
-    item_nodes = [prod_to_node(prod) for prod in items]
-    # use single node instance
-    start_node = SingleNode(coord=conf.start_position, map=map_data)
-    end_node = SingleNode(coord=conf.end_position, map=map_data)
-    if override_start_position:  # If start_position overridden
-        start_node = SingleNode(coord=override_start_position, map=map_data)
-    if override_end_position:  # If end_position overridden
-        end_node = SingleNode(coord=override_end_position, map=map_data)
-    
-    instr, total_cost, route = find_route_with_timeout(
-        item_nodes=item_nodes,
-        start_node=start_node,
-        end_node=end_node,
-        algorithm=conf.default_algorithm,
-        timeout=conf.default_timeout_value,
-    )
-    # Draw text map
-    map_text = draw_text_map(map_data)
-    # Add route paths to map
-    map_text = add_paths_to_map(map_text, route, item_locations)
-    # Add axes to map for easier reading
-    map_full = add_axes_to_map(map_text, rows, cols)
-
-    # Show result
-    warn("\nWAREHOUSE MAP\n")
-    print_map(map_full)
-    print(instr)
-    print(f"Total distance is {total_cost}.")
-
-    if conf.save_instructions:
-        # Create the directory "reports" if it does not exist yet
-        if not os.path.exists("reports"):
-            os.makedirs("reports")
-
-        # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
-        # and append .txt extension
-        save_to_file(
-            f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
-            gen_instruction_metadata() + instr,
+    while True:
+        # Get item ids from user input
+        item_ids, override_start_position, override_end_position = get_item_ids(map_data, prod_db, conf)
+        item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
+        if len(item_locations) == 0:
+            warn("The item(s) requested are not available at the moment. ")
+            return -1
+        # use prod instance
+        items = get_item(prod_db, item_ids)
+        item_nodes = [prod_to_node(prod) for prod in items]
+        # use single node instance
+        start_node = SingleNode(coord=conf.start_position, map=map_data)
+        end_node = SingleNode(coord=conf.end_position, map=map_data)
+        if override_start_position:  # If start_position overridden
+            start_node = SingleNode(coord=override_start_position, map=map_data)
+        if override_end_position:  # If end_position overridden
+            end_node = SingleNode(coord=override_end_position, map=map_data)
+        
+        instr, total_cost, route = find_route_with_timeout(
+            item_nodes=item_nodes,
+            start_node=start_node,
+            end_node=end_node,
+            algorithm=conf.default_algorithm,
+            timeout=conf.default_timeout_value,
         )
+        # Draw text map
+        map_text = draw_text_map(map_data)
+        # Add route paths to map
+        map_text = add_paths_to_map(map_text, route, item_locations)
+        # Add axes to map for easier reading
+        map_full = add_axes_to_map(map_text, rows, cols)
+
+        # Show result
+        warn("\nWAREHOUSE MAP\n")
+        print_map(map_full)
+        print(instr)
+        print(f"Total distance is {total_cost}.")
+
+        # save result to file
+        if conf.save_instructions:
+            # Create the directory "reports" if it does not exist yet
+            if not os.path.exists("reports"):
+                os.makedirs("reports")
+
+            # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
+            # and append .txt extension
+            save_to_file(
+                f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
+                gen_instruction_metadata() + instr,
+            )
+        
+        continue_ = input_data_as_list(
+            "Do you want to continue fetching?",
+            "b",
+            1,
+        )[0]
+        if not continue_:
+            break
+
 
 
 def get_item_ids(map_data, prod_db, conf: Config):
@@ -208,11 +219,11 @@ def get_item_ids(map_data, prod_db, conf: Config):
                     item_count,
                 )
                 change_pos = input_data_as_list(
-                    "Do you want to change the start/end position now? (y/n)",
-                    "s",
+                    "Do you want to change the start/end position now?",
+                    "b",
                     1,
                 )[0]
-                if change_pos == 'y':
+                if change_pos:
                     while True:
                         print(
                             "Please enter the start position (format: x, y - split by a comma)"
@@ -249,7 +260,6 @@ def get_item_ids(map_data, prod_db, conf: Config):
                 break
 
             case "A":
-                # TODO Order list must be stored globally to track its fulfillment status
                 file_path = ORDER_LIST_FILE
                 order_ids, order_list = read_order_file(file_path)
                 # Check if there's problem with the file
