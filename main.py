@@ -1,6 +1,7 @@
 import argparse
 import datetime
 import os
+import signal
 from random import choice
 from lib.tui import *
 from lib.core import *
@@ -20,6 +21,7 @@ CONF = Config(
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 order_list_file = "data/qvBox-warehouse-orders-list-part01.txt"
 
+signal.signal(signal.SIGINT, signal.SIG_DFL) # Catches KeyboardInterrupt and prevents it from raising an error. 
 
 """ Settings Menu """
 
