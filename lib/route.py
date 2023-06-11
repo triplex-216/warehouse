@@ -5,6 +5,7 @@ import heapq
 from itertools import combinations, product
 from .core import *
 from .bnb import *
+from .genetic import *
 import multiprocessing
 from time import sleep
 
@@ -277,6 +278,9 @@ def find_route(
         total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
     elif algorithm == "n":
         total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
+    elif algorithm == "t":
+        total_cost, path = genetic(item_nodes, start_node, end_node)
+        print(total_cost, path)
     elif algorithm == "f":  # fallback
         total_cost, path = default(nodes, start_ap, end_ap)
 

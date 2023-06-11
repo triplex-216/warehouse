@@ -1,7 +1,7 @@
 from lib.core import *
 from lib.route import *
 from lib.tui import *
-from gt import *
+from lib.genetic import *
 
 
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
@@ -49,7 +49,20 @@ test_order_lists = [
         1,
         20373,
     ],
-]
+[427230, 372539, 396879, 391680, 208660, 105912, 332555, 227534, 68048, 188856, 736830, 736831, 479020, 103313, 1
+]]
+
+# def prod_to_node(order_list):
+#     coord_set = set()
+#     item_nodes = []
+#     for prod in order_list:
+#         if (prod.x, prod.y) in coord_set:
+#             continue
+#         else:
+#             item_nodes.append(Node(prod.id, (prod.x, prod.y), prod._map))
+#             coord_set.add((prod.x, prod.y))
+#     return item_nodes
+
 
 
 if __name__ == "__main__":
@@ -66,5 +79,5 @@ if __name__ == "__main__":
     # rounds = max(int((len(input_nodes) ** 2) / 2), 30)
     rounds = 30
     
-    population, fit = genetic(item_nodes, start_node, end_node, rounds)
+    fit, population = genetic(item_nodes, start_node, end_node, rounds)
     print([n.coord for n in population], fit)

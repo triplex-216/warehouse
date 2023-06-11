@@ -12,7 +12,8 @@ VERSION = "Beta 2.0"
 CONF = Config(
     use_random_item=True,
     save_instructions=True,
-    default_algorithm="g",
+    # default_algorithm="g",
+    default_algorithm="t",
     start_position=(0, 0),
     end_position=(0, 0),
     default_timeout_value=10,
@@ -47,17 +48,18 @@ def input_default_algorithm(conf: Config):
         "b": "Branch and bound",
         "g": "Greedy",
         "n": "Nearest neighbor",
+        "t": "Genetic",
     }
 
     str_default_algorithm = input_data_as_list(
-        "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy",
+        "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy; t - genetic",
         "s",
         1,
     )[0]
     while str_default_algorithm not in algs.keys():
         print(f"Please choose a valid option from b/g")
         str_default_algorithm = input_data_as_list(
-            "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy",
+            "Choose a default algorithm of your choice (b/n/g/t)\nb - branch and bound; n - nearest neighbor; g - greedy; t - genetic",
             "s",
             1,
         )[0]
