@@ -1,26 +1,36 @@
 import argparse
 import datetime
 import os
+import signal
 from random import choice
 from lib.tui import *
 from lib.core import *
 from lib.route import *
 from lib.misc import *
 
-VERSION = "Beta 2.0"
+VERSION = "Final"
 
 CONF = Config(
     use_random_item=True,
     save_instructions=True,
-    # default_algorithm="g",
-    default_algorithm="t",
+    default_algorithm="b",
     start_position=(0, 0),
     end_position=(0, 0),
-    default_timeout_value=10,
+    default_timeout_value=15,
 )
-DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
-order_list_file = "data/qvBox-warehouse-orders-list-part01.txt"
 
+ALGS = {
+    "b": "Branch and bound",
+    "g": "Greedy",
+    "n": "Nearest neighbor",
+}
+
+DATASET_FILE = "data/qvBox-warehouse-data-s23-v01.txt"
+ORDER_LIST_FILE = "data/qvBox-warehouse-orders-list-part01.txt"
+
+signal.signal(
+    signal.SIGINT, signal.SIG_DFL
+)  # Catches KeyboardInterrupt and prevents it from raising an error.
 
 """ Settings Menu """
 
@@ -44,19 +54,12 @@ def input_config_save_instructions(conf: Config):
 
 
 def input_default_algorithm(conf: Config):
-    algs = {
-        "b": "Branch and bound",
-        "g": "Greedy",
-        "n": "Nearest neighbor",
-        "t": "Genetic",
-    }
-
     str_default_algorithm = input_data_as_list(
         "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy; t - genetic",
         "s",
         1,
     )[0]
-    while str_default_algorithm not in algs.keys():
+    while str_default_algorithm not in ALGS.keys():
         print(f"Please choose a valid option from b/g")
         str_default_algorithm = input_data_as_list(
             "Choose a default algorithm of your choice (b/n/g/t)\nb - branch and bound; n - nearest neighbor; g - greedy; t - genetic",
@@ -64,7 +67,7 @@ def input_default_algorithm(conf: Config):
             1,
         )[0]
     conf.default_algorithm = str_default_algorithm
-    print(f"Set default algorithm to {algs[str_default_algorithm]}")
+    print(f"Set default algorithm to {ALGS[str_default_algorithm]}")
 
 
 def input_timeout_value(conf: Config):
@@ -95,6 +98,16 @@ def input_start_end_pos(conf: Config):
     print(f"Set end position to {(end_x, end_y)}.")
 
 
+def show_current_config(conf: Config):
+    warn("Showing current config: ")
+    print(f"Use random item: {conf.use_random_item}")
+    print(f"Save instructions to file: {conf.save_instructions}")
+    print(f"Default algorithm: {ALGS[conf.default_algorithm]}")
+    print(f"Start position: {conf.start_position}")
+    print(f"End position: {conf.end_position}")
+    print(f"Time out (seconds): {conf.default_timeout_value}")
+
+
 settings_menu = Menu(
     text="Settings menu",
     options=[
@@ -115,24 +128,32 @@ settings_menu = Menu(
             "Start/End Position",
             lambda: input_start_end_pos(conf=CONF),
         ),
+        (
+            "Show current configs",
+            lambda: show_current_config(conf=CONF),
+        ),
     ],
 )
 
-
-""" Main Menu """
+""" Start """
 
 
 def start_routing(conf: Config):
-    def process_order(
-        item_ids,
-        override_start_position: tuple[int, int] = None,
-        override_end_position: tuple[int, int] = None,
-    ):
+    # Read inventory data from text file
+    map_data, prod_db = read_inventory_data(DATASET_FILE)
+    cols, rows = len(map_data), len(map_data[0])
+    while True:
+        # Get item ids from user input
+        item_ids, override_start_position, override_end_position = get_item_ids(
+            map_data, prod_db, conf
+        )
         item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
-
         if len(item_locations) == 0:
             warn("The item(s) requested are not available at the moment. ")
             return -1
+        # use prod instance
+        items = get_item(prod_db, item_ids)
+        item_nodes = [prod_to_node(prod) for prod in items]
         # use single node instance
         start_node = SingleNode(coord=conf.start_position, map=map_data)
         end_node = SingleNode(coord=conf.end_position, map=map_data)
@@ -140,10 +161,8 @@ def start_routing(conf: Config):
             start_node = SingleNode(coord=override_start_position, map=map_data)
         if override_end_position:  # If end_position overridden
             end_node = SingleNode(coord=override_end_position, map=map_data)
-        # use prod instance
-        items = get_item(prod_db, item_ids)
-        item_nodes = [prod_to_node(prod) for prod in items]
-        instr, total_cost, route = find_route_with_timeout(
+
+        instr, total_cost, route, timeout = find_route_with_timeout(
             item_nodes=item_nodes,
             start_node=start_node,
             end_node=end_node,
@@ -157,32 +176,39 @@ def start_routing(conf: Config):
         # Add axes to map for easier reading
         map_full = add_axes_to_map(map_text, rows, cols)
 
+        # Show result
         warn("\nWAREHOUSE MAP\n")
         print_map(map_full)
-        algs = {
-            "b": "Branch and bound",
-            "g": "Greedy",
-            "n": "Nearest neighbor",
-        }
         print(instr)
-        print(f"Total distance is {total_cost}.")
-
-        # TODO respect settings
-        # Create the directory "reports" if it does not exist yet
-        if not os.path.exists("reports"):
-            os.makedirs("reports")
-
-        # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
-        # and append .txt extension
-        save_to_file(
-            f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
-            gen_instruction_metadata() + instr,
+        print(
+            f"Total distance is {total_cost}. (Calculated with {'Nearest Neighbor' if timeout else ALGS[conf.default_algorithm]})"
         )
 
-    # Read inventory data from text file
-    map_data, prod_db = read_inventory_data(DATASET)
-    cols, rows = len(map_data), len(map_data[0])
+        # save result to file
+        if conf.save_instructions:
+            # Create the directory "reports" if it does not exist yet
+            if not os.path.exists("reports"):
+                os.makedirs("reports")
 
+            # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
+            # and append .txt extension
+            save_to_file(
+                f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
+                gen_instruction_metadata() + instr,
+            )
+
+        continue_ = input_data_as_list(
+            "Do you want to continue fetching?",
+            "b",
+            1,
+        )[0]
+        if not continue_:
+            break
+
+
+def get_item_ids(map_data, prod_db, conf: Config):
+    override_start_position = None
+    override_end_position = None
     # Allow user to input items' id manually or get them from an existing file
     loc_src = input_data_as_list(
         "Do you want to input the order manually or automatically get it from an existing file? (M/A)",
@@ -201,12 +227,38 @@ def start_routing(conf: Config):
                     "d",
                     item_count,
                 )
-                print(
-                    "Please enter the start position (format: x, y - split by a comma)"
-                )
-                start_x, start_y = [int(num) for num in input("> ").split(",")]
-                print("Please enter the end position (format: x, y - split by a comma)")
-                end_x, end_y = [int(num) for num in input("> ").split(",")]
+                change_pos = input_data_as_list(
+                    "Do you want to change the start/end position now?",
+                    "b",
+                    1,
+                )[0]
+                if change_pos:
+                    while True:
+                        print(
+                            "Please enter the start position (format: x, y - split by a comma)"
+                        )
+                        override_start_position = tuple(
+                            int(num) for num in input("> ").split(",")
+                        )
+                        if is_not_shelve(map_data, override_start_position):
+                            break
+                        else:
+                            print(
+                                f"Position {override_start_position} is a shelve, please re-enter another position."
+                            )
+                    while True:
+                        print(
+                            "Please enter the end position (format: x, y - split by a comma)"
+                        )
+                        override_end_position = tuple(
+                            int(num) for num in input("> ").split(",")
+                        )
+                        if is_not_shelve(map_data, override_end_position):
+                            break
+                        else:
+                            print(
+                                f"Position {override_end_position} is a shelve, please re-enter another position."
+                            )
 
                 # DEBUG FEATURE: Pick random item when specified item ID does not exist
                 if conf.use_random_item:
@@ -224,16 +276,10 @@ def start_routing(conf: Config):
                             debug(
                                 f"Item {i} does not exist, replacing it with {random_item_id}! "
                             )
-                process_order(
-                    item_ids,
-                    override_start_position=(start_x, start_y),
-                    override_end_position=(end_x, end_y),
-                )
                 break
 
             case "A":
-                # TODO Order list must be stored globally to track its fulfillment status
-                file_path = order_list_file
+                file_path = ORDER_LIST_FILE
                 order_ids, order_list = read_order_file(file_path)
                 # Check if there's problem with the file
                 if len(order_ids) == 0:
@@ -250,25 +296,27 @@ def start_routing(conf: Config):
                 )[0]
 
                 if use_custom_order_id:
-                    order_num = input_data_as_list(
-                        f"Please give an valid id of order. (1 - {len(order_ids)})",
+                    order_id = input_data_as_list(
+                        f"Please give an valid id of order (1 - {len(order_ids)}) ",
                         "d",
                         1,
                     )[0]
                 else:  # Randomly pick an unhandled order
-                    order_num = choice(list(order_set))
+                    order_id = choice(list(order_set))
 
-                if order_num in order_set:
-                    item_ids = order_list[order_num - 1]
-                    process_order(item_ids)
+                if order_id in order_set:
+                    item_ids = order_list[order_id - 1]
                 else:
                     warn("The number is invalid. Please try again!")
-
                 break
             case _:
                 warn("Please give a correct input! ")
                 loc_src = input("> ")
 
+    return item_ids, override_start_position, override_end_position
+
+
+""" Main Menu """
 
 main_menu = Menu(
     text=f"Warehouse Navigator {VERSION}",
@@ -282,7 +330,15 @@ main_menu = Menu(
 
 
 def main():
-    map_data, prod_db = read_inventory_data(DATASET)
+    # Perform file check before launching
+    for path in [DATASET_FILE, ORDER_LIST_FILE]:
+        if os.path.exists(path) and os.path.isfile(path):
+            continue
+        else:
+            print(f"File {path} not found! Exiting...")
+            return -1
+
+    map_data, prod_db = read_inventory_data(DATASET_FILE)
     cols, rows = len(map_data), len(map_data[0])
     map_text = draw_text_map(map_data)
     print_map(map_text)

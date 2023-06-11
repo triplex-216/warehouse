@@ -1,17 +1,14 @@
 import resource
-import matplotlib.pyplot as plt
+import time
 from lib.core import *
 from lib.route import *
 from lib.tui import *
 from lib.genetic import *
 from lib.bnb import *
-from itertools import combinations, product
-from random import sample
 
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
 map_data, prod_db = read_inventory_data(DATASET)
 cols, rows = len(map_data), len(map_data[0])
-
 test_order_lists = [
     [108335],
     [108335, 391825, 340367, 286457, 661741],
@@ -57,71 +54,96 @@ test_order_lists = [
     ],
 ]
 
-# order_list = [prod_db[item] for item in test_order_lists[2]]
-order_list = [prod_db[item] for item in sample(test_order_lists[2], k=6)]
-# order_list = [prod_db[item] for item in [108335, 391825, 340367]]
-# order_list = [prod_db[item] for item in [108335, 391825]]
 
-item_locations = get_item_locations(prod_db, [p.id for p in order_list])
-item_nodes = [prod_to_node(prod) for prod in order_list]
-start_node = SingleNode(coord=(0, 0), map=map_data)
-# end_node = SingleNode(coord=(0, 0), map=map_data)
-# end_node = SingleNode(coord=(20, 11), map=map_data)
-end_node = SingleNode(coord=(20, 20), map=map_data)
-# all_nodes = [start_node] + item_nodes
-all_nodes = [start_node] + item_nodes + [end_node]
-generate_cost_graph(all_nodes, start_node=start_node, end_node=end_node)
+def run_bnb():
+    item_nodes = [prod_to_node(prod_db[item]) for item in test_order_lists[1][:]]
 
-# instructions, total_cost, route = find_route(item_nodes, start_node, end_node, "n")
-# print(total_cost)
-# print(instructions)
+    start_node = SingleNode(coord=(0, 0), map=map_data)
+    end_node = SingleNode(coord=(20, 20), map=map_data)
 
-# np.seterr(all='raise')
-_cost, path = branch_and_bound(
-    item_nodes=item_nodes, start_node=start_node, end_node=end_node
-)
+    all_nodes = [start_node] + item_nodes + [end_node]
 
-instructions, _route = path_instructions(
-    path=path, start_ap=start_node.aps[0], end_ap=end_node.aps[0]
-)
-print(f"Cost={len(_route)}, Path={[ap.coord for ap in path]}")
-print(instructions)
+    generate_cost_graph(all_nodes, start_node, end_node)
 
-
-peak_mem_in_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-peak_mem_str = f"{peak_mem_in_kb} KiB ({(peak_mem_in_kb/1024):0.2f} MiB)"
-print(peak_mem_str)
-
-
-# Draw text map
-map_text = draw_text_map(map_data)
-# Add route paths to map
-map_text = add_paths_to_map(map_text, _route, item_locations)
-# Add axes to map for easier reading
-map_full = add_axes_to_map(map_text, rows, cols)
-
-warn("\nWAREHOUSE MAP\n")
-print_map(map_full)
-print(instructions)
-
-# NN
-nn_instr, nn_total_cost, nn_route = find_route(
+    bnb_instr, bnb_total_cost, bnb_route = find_route(
         item_nodes=item_nodes,
         start_node=start_node,
         end_node=end_node,
-        algorithm='n',
-)
-# Draw text map
-map_text = draw_text_map(map_data)
-# Add route paths to map
-map_text = add_paths_to_map(map_text, nn_route, item_locations)
-# Add axes to map for easier reading
-map_full = add_axes_to_map(map_text, rows, cols)
-print_map(map_full)
-print(nn_instr)
-print(f"Total distance is {len(_route)} using BnB algorithm.")
-print(f"Total distance is {len(nn_route)} using Nearest-Neighbor algorithm.")
+        algorithm="b",
+    )
+    nn_instr, nn_total_cost, nn_route = find_route(
+        item_nodes=item_nodes,
+        start_node=start_node,
+        end_node=end_node,
+        algorithm="n",
+    )
 
-print(item_locations)
+    print(f"Total distance is {len(bnb_route)} using BnB algorithm.")
+    print(f"Total distance is {len(nn_route)} using Nearest-Neighbor algorithm.")
 
-pass
+
+def read_order_file(file_path):
+    orders = {}
+
+    if os.path.exists(file_path):
+        id = 1
+        with open(file_path) as csvfile:
+            reader = csv.reader(csvfile, delimiter="\t")
+            for curr in reader:
+                orders[id] = [int(num) for num in curr[0].split(",")]
+                id += 1
+
+    return orders
+
+
+if __name__ == "__main__":
+    orders = read_order_file("data/qvBox-warehouse-orders-list-part01.txt")
+
+    failed_cases = []
+
+    for order in orders.values():
+        break
+        size_limit = 6
+        if len(order) >= size_limit:
+            order = order[:size_limit]
+
+        item_nodes = [prod_to_node(prod_db[item]) for item in order]
+
+        start_node = SingleNode(coord=(0, 0), map=map_data)
+        end_node = SingleNode(coord=(20, 20), map=map_data)
+
+        all_nodes = [start_node] + item_nodes + [end_node]
+
+        generate_cost_graph(all_nodes, start_node, end_node)
+
+        bnb_instr, bnb_total_cost, bnb_route = find_route(
+            item_nodes=item_nodes,
+            start_node=start_node,
+            end_node=end_node,
+            algorithm="b",
+        )
+
+        nn_instr, nn_total_cost, nn_route = find_route(
+            item_nodes=item_nodes,
+            start_node=start_node,
+            end_node=end_node,
+            algorithm="n",
+        )
+
+        print(f"Total distance is {len(bnb_route)} using BnB algorithm.")
+        print(f"Total distance is {len(nn_route)} using Nearest-Neighbor algorithm.")
+
+        if len(bnb_route) > len(nn_route):
+            print(f"BnB is inferior to NN in {order}! ")
+            failed_cases.append(order)
+
+    peak_mem_in_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    peak_mem_str = f"{peak_mem_in_kb} KiB ({(peak_mem_in_kb/1024):0.2f} MiB)"
+    print(peak_mem_str)
+
+    print(f"Failed Cases: {failed_cases}")
+
+    run_bnb()
+    # import cProfile
+
+    # cProfile.run("run_bnb()")

@@ -42,6 +42,7 @@ def generate_cost_graph(
     if start_node and end_node:
         start_ap, end_ap = start_node.aps[0], end_node.aps[0]
         # Set distance[(node, start)] = inf to ensure no one can access start
+        # Set distance[(end, node)] = inf to ensure end can not access any node exept start
         for node in nodes:
             if node != start_node:
                 for ap in node.aps:
@@ -197,7 +198,7 @@ def path_instructions(
     # re-order the path to begin with start and terminate with end
     start_index = path.index(start_ap)
     path = path[start_index:] + path[:start_index]
-    print([ap.coord for ap in path])
+    # print([ap.coord for ap in path])
 
     ap = path[0]
     for next in path[1:]:
@@ -271,12 +272,10 @@ def find_route(
     generate_cost_graph(nodes, start_node=start_node, end_node=end_node)
 
     if algorithm == "b":  # branch and bound
-        total_cost, path = branch_and_bound(
-            item_nodes=item_nodes, start_node=start_node, end_node=end_node
-        )
+        total_cost, path = branch_and_bound(nodes, start_ap, end_ap)
     elif algorithm == "g":  # greedy
         total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
-    elif algorithm == "n":
+    elif algorithm == "n":  # nearest neighbor
         total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
     elif algorithm == "t":
         total_cost, path = genetic(item_nodes, start_node, end_node)
@@ -304,6 +303,7 @@ def find_route_with_timeout(
 ):
     manager = multiprocessing.Manager()
     shared_list = manager.list()
+    timeout_triggered = False # Timeout indicator
 
     algorithm_process = multiprocessing.Process(
         target=find_route,
@@ -317,17 +317,21 @@ def find_route_with_timeout(
     algorithm_process.join(timeout=timeout)
     if algorithm_process.is_alive():
         print(f"Algorithm timed out! Using fallback algorithm...")
+        timeout_triggered = True
         # If the algorithm is still alive after timeout, terminate the algorithm
         # and fallback to the default order
         algorithm_process.terminate()
         algorithm_process.join()
 
         instructions, total_cost, route = find_route(
-            item_nodes, start_node, end_node, "f"
+            item_nodes,
+            start_node,
+            end_node,
+            "n", # Use Nearest Neighbor algorithm as fallback (no timeout)
         )
 
     else:
         # The algorithm finished successfully before timeout
         instructions, total_cost, route = shared_list[0]
 
-    return instructions, total_cost, route
+    return instructions, total_cost, route, timeout_triggered

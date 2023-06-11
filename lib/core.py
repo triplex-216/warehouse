@@ -250,6 +250,8 @@ def read_order_file(file_path):
 
     return id, order_list
 
+def is_not_shelve(map, x, y):
+    return map[x][y] == 0
 
 def get_aps(map, node: tuple) -> list[tuple[tuple, tuple]]:
     aps = []  # list record dir and ap coord
