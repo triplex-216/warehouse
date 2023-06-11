@@ -63,9 +63,8 @@ def input_default_algorithm(conf: Config):
         1,
     )[0]
     while str_default_algorithm not in ALGS.keys():
-        print(f"Please choose a valid option from b/n/g/t")
         str_default_algorithm = input_data_as_list(
-            "Choose a default algorithm of your choice (b/n/g/t)\nb - branch and bound; n - nearest neighbor; g - greedy; t - genetic",
+            "Please choose a valid option. (b/n/g/t)",
             "s",
             1,
         )[0]
@@ -74,12 +73,14 @@ def input_default_algorithm(conf: Config):
 
 
 def input_timeout_value(conf: Config):
-    while True:
-        timeout_value = input_data_as_list(
-            "Please enter the time you're glad to wait. (up to 60 seconds)", "d", 1
+    timeout_value = input_data_as_list(
+            "Please enter the time you're glad to wait. (up to 60 seconds) ", "d", 1
         )[0]
+    while True:
         if timeout_value < 0 or timeout_value > 60:
-            warn("Please enter a valid number!")
+            timeout_value = input_data_as_list(
+            "Invalid time, please try again! ", "d", 1
+        )[0]
         else:
             break
     conf.default_timeout_value = timeout_value
@@ -87,40 +88,24 @@ def input_timeout_value(conf: Config):
 
 
 def input_start_end_pos(conf: Config):
-    print(
-            "Please enter the start position (format: x, y - split by a comma)"
-        )
+    start_position = input_data_as_list("Please enter the start position ", "c", 1)[0]
     while True:
-        try:
-            start_position = tuple(
-                int(num) for num in input("> ").split(",")
-            )
-        except ValueError:
-            print("Invalid input format, please try again.")
-            continue
         if is_valid(conf.map_data, start_position):
             print(f"Set start position to {start_position}.")
             conf.start_position = start_position
             break
         else:
+            start_position = input_data_as_list(f"Position {start_position} is a shelf, please try another position. ", "c", 1)[0]
             continue
 
-    print(
-            "Please enter the end position (format: x, y - split by a comma)"
-        )
-    while True:
-        try:
-            end_position = tuple(
-                int(num) for num in input("> ").split(",")
-            )
-        except ValueError:
-            print("Invalid input format, please try again.")
-            continue  
+    end_position = input_data_as_list("Please enter the end position ", "c", 1)[0]
+    while True:  
         if is_valid(conf.map_data, end_position):
             print(f"Set end position to {end_position}.")
             conf.end_position = end_position
             break
         else:
+            end_position = input_data_as_list(f"Position {end_position} is a shelf, please try another position. ", "c", 1)[0]
             continue
  
     return start_position, end_position
@@ -220,7 +205,7 @@ def start_routing(conf: Config):
             )
 
         continue_ = input_data_as_list(
-            "Do you want to continue fetching?",
+            "Do you want to continue fetching? ",
             "b",
             1,
         )[0]
@@ -240,7 +225,7 @@ def get_item_ids(conf: Config):
         if id_src in ['M', 'm']:
             item_ids = input_item_ids(conf)
             change_pos = input_data_as_list(
-                "Do you want to change the start/end position now?",
+                "Do you want to change the start/end position now? ",
                 "b",
                 1,
             )[0]
@@ -271,8 +256,7 @@ def get_item_ids(conf: Config):
                 item_ids = choice(list(order_list.values()))
             break
         else:
-            warn("Please give a correct input! ")
-            id_src = input("> ")
+            id_src = input_data_as_list("Invalid option, please try again.", "s", 1)[0]
 
     return item_ids
 
@@ -281,7 +265,7 @@ def input_item_ids(conf):
             "How many items would you like to fetch? (0 - 50)", "d", 1
         )[0]
     while True:
-        if int(item_count) <= 50:
+        if 0< item_count <= 50:
             item_ids = input_data_as_list(
                 "Please input IDs of the items you wish to add to list",
                 "d",
@@ -304,24 +288,26 @@ def input_item_ids(conf):
                         )
             return item_ids
         else:
-            print("Too many items. Please choose smaller amount!")
-            item_count = input("> ")
+            item_count = input_data_as_list("Invalid amount, please try again. (0 - 50) ", "d", 1)[0]
     
 
 def input_order_id(order_list):
-    while True:
-        order_id = input_data_as_list(
+    order_id = input_data_as_list(
             f"Please give an valid id of order (1 - {len(order_list)}) ",
             "d",
             1,
         )[0]
+    while True:
         try:
             item_ids = order_list[order_id]
             print(f"Now use order {order_id}: {item_ids}")
             return item_ids
         except KeyError:
-            warn("Invalid order id. Please try again!")
-
+            order_id = input_data_as_list(
+            f"Invalid order id, please try again. (1 - {len(order_list)}) ",
+            "d",
+            1,
+        )[0]
 
 """ Main Menu """
 
