@@ -67,8 +67,15 @@ def genetic(
         individual_path = start_node.aps + individual + end_node.aps
         return f"{[n.coord for n in individual_path]}"
 
-    # Keep population at a constant size
-    size = int(len(item_nodes) * (len(item_nodes) - 1) / 2)
+    # If only 1 node, return a path with the node
+    if len(item_nodes) == 1:
+        return (
+            gt_cost([item_nodes[0].aps[0]], start_node, end_node),
+            start_node.aps + [item_nodes[0].aps[0]] + end_node.aps,
+        )
+
+    # Keep population at a constant size (at least 2)
+    size = max(2, int(len(item_nodes) * (len(item_nodes) - 1) / 2))
 
     if rounds == 0:
         rounds = max(int((len(item_nodes) ** 2) / 2), 100)
