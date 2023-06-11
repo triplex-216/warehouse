@@ -310,6 +310,14 @@ main_menu = Menu(
 
 
 def main():
+    # Perform file check before launching
+    for path in [DATASET_FILE, ORDER_LIST_FILE]: 
+        if os.path.exists(path) and os.path.isfile(path): 
+            continue
+        else: 
+            print(f"File {path} not found! Exiting...")
+            return -1
+
     map_data, prod_db = read_inventory_data(DATASET_FILE)
     cols, rows = len(map_data), len(map_data[0])
     map_text = draw_text_map(map_data)
