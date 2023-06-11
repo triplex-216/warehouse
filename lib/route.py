@@ -9,6 +9,7 @@ from .genetic import *
 from .nearest_neighbor import *
 import multiprocessing
 from time import sleep
+import sys
 
 
 def prod_to_node(prod: Prod):
@@ -210,6 +211,18 @@ def timer(timeout: int):
     sleep(timeout)
 
 
+def clear_screen():
+    # print("\r", end="")
+    sys.stdout.write("\u001b[2K")
+
+
+def load_animation():
+    while True:
+        for c in "|/-\\":
+            print(c, end="\r")
+            sleep(0.1)
+
+
 def find_route_with_timeout(
     item_nodes: list[Node],
     start_node: SingleNode,
@@ -219,21 +232,24 @@ def find_route_with_timeout(
 ):
     manager = multiprocessing.Manager()
     shared_list = manager.list()
-    timeout_triggered = False # Timeout indicator
+    timeout_triggered = False  # Timeout indicator
 
+    animation_process = multiprocessing.Process(
+        target=load_animation,
+    )
     algorithm_process = multiprocessing.Process(
         target=find_route,
         args=(item_nodes, start_node, end_node, algorithm, shared_list),
     )
-    # timer_process = multiprocessing.Process(target=timer, args=timeout)
 
+    animation_process.start()
     algorithm_process.start()
-    # timer_process.start()
 
     algorithm_process.join(timeout=timeout)
     if algorithm_process.is_alive():
         print(f"Algorithm timed out! Using fallback algorithm...")
         timeout_triggered = True
+
         # If the algorithm is still alive after timeout, terminate the algorithm
         # and fallback to the default order
         algorithm_process.terminate()
@@ -243,11 +259,15 @@ def find_route_with_timeout(
             item_nodes,
             start_node,
             end_node,
-            "n", # Use Nearest Neighbor algorithm as fallback (no timeout)
+            "n",  # Use Nearest Neighbor algorithm as fallback (no timeout)
         )
 
     else:
         # The algorithm finished successfully before timeout
         instructions, total_cost, route = shared_list[0]
+
+    # Stop the loading animation
+    animation_process.terminate()
+    animation_process.join()
 
     return instructions, total_cost, route, timeout_triggered
