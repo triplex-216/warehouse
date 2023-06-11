@@ -238,14 +238,7 @@ def get_item_ids(conf: Config):
 
     while True:
         if id_src in ['M', 'm']:
-            item_count = input_data_as_list(
-                "How many items would you like to fetch? ", "d", 1
-            )[0]
-            item_ids = input_data_as_list(
-                "Please input IDs of the items you wish to add to list",
-                "d",
-                item_count,
-            )
+            item_ids = input_item_ids(conf)
             change_pos = input_data_as_list(
                 "Do you want to change the start/end position now?",
                 "b",
@@ -254,21 +247,6 @@ def get_item_ids(conf: Config):
             if change_pos:
                 input_start_end_pos(conf=conf)
             # DEBUG FEATURE: Pick random item when specified item ID does not exist
-            if conf.use_random_item:
-                valid_ids = list(conf.prod_db.keys())
-                # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
-                for idx, i in enumerate(item_ids):
-                    if i not in valid_ids:
-                        # Replace invalid ID with random item
-                        random_item_id = item_ids[0]
-                        while (
-                            random_item_id in item_ids
-                        ):  # Avoid duplicate ID; chance is extremely low
-                            random_item_id = choice(valid_ids)
-                        item_ids[idx] = random_item_id
-                        debug(
-                            f"Item {i} does not exist, replacing it with {random_item_id}! "
-                        )
             break
 
         elif id_src in ['A', 'a']:
@@ -288,20 +266,9 @@ def get_item_ids(conf: Config):
             )[0]
 
             if use_custom_order_id:
-                while True:
-                    order_id = input_data_as_list(
-                        f"Please give an valid id of order (1 - {len(order_list.keys())}) ",
-                        "d",
-                        1,
-                    )[0]
-                    try:
-                        item_ids = order_list[order_id]
-                        print(f"Now use order {order_id}: {item_ids}")
-                        break
-                    except KeyError:
-                        warn("The id is invalid. Please try again!")
+                item_ids = input_order_id(order_list)
             else:  # Randomly pick an unhandled order
-                item_ids = choice(order_list)
+                item_ids = choice(list(order_list.values()))
             break
         else:
             warn("Please give a correct input! ")
@@ -309,6 +276,51 @@ def get_item_ids(conf: Config):
 
     return item_ids
 
+def input_item_ids(conf):
+    item_count = input_data_as_list(
+            "How many items would you like to fetch? (0 - 50)", "d", 1
+        )[0]
+    while True:
+        if item_count <= 50:
+            item_ids = input_data_as_list(
+                "Please input IDs of the items you wish to add to list",
+                "d",
+                item_count,
+            )
+            if conf.use_random_item:
+                valid_ids = list(conf.prod_db.keys())
+                # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
+                for idx, i in enumerate(item_ids):
+                    if i not in valid_ids:
+                        # Replace invalid ID with random item
+                        random_item_id = item_ids[0]
+                        while (
+                            random_item_id in item_ids
+                        ):  # Avoid duplicate ID; chance is extremely low
+                            random_item_id = choice(valid_ids)
+                        item_ids[idx] = random_item_id
+                        debug(
+                            f"Item {i} does not exist, replacing it with {random_item_id}! "
+                        )
+            return item_ids
+        else:
+            print("Too many items! Please choose smaller amount!")
+            item_count = input("> ")
+    
+
+def input_order_id(order_list):
+    while True:
+        order_id = input_data_as_list(
+            f"Please give an valid id of order (1 - {len(order_list)}) ",
+            "d",
+            1,
+        )[0]
+        try:
+            item_ids = order_list[order_id]
+            print(f"Now use order {order_id}: {item_ids}")
+            return item_ids
+        except KeyError:
+            warn("The id is invalid. Please try again!")
 
 
 """ Main Menu """
