@@ -1,102 +1,98 @@
 from itertools import permutations
-from random import sample, randint
-from .route import cost, SingleNode, AccessPoint
+from random import sample, randint, choice, random
+from lib.route import Node, AccessPoint, SingleNode
+
+MUTATION_RATE = 0.1
 
 
 def generate_population(
-    item_nodes: list[SingleNode], size: int = 10
+    item_nodes: list[Node], size: int = 10
 ) -> list[list[AccessPoint]]:
-    # Get actual access points of each single access node
-    aps = [next(iter((n.neighbors.values()))) for n in item_nodes]
-    ap_coordinates = [ap.coord for ap in aps]
+    population = []
+    for i in range(size):
+        # Get a random access points of each node
+        aps = [choice(n.aps) for n in item_nodes]
+        population.append(sample(list(aps), k=len(aps)))
 
-    population = sample(list(permutations(aps)), k=size)
-    population = [list(p) for p in population]  # Convert from tuple to list
     return population
 
 
-def fitness(individual: list[AccessPoint]) -> float:
+def gt_cost(
+    individual: list[AccessPoint],
+    start_node: SingleNode,
+    end_node: SingleNode,
+) -> float:
+    # Add start and end for individual path
+    full_path = start_node.aps + individual + end_node.aps
+
     cost = 0
-    size = len(individual)
+    size = len(full_path)
     for i in range(size):
-        curr, nxt = individual[i], individual[(i + 1) % size]
-        if curr == nxt:
-            return float("inf")
+        curr, nxt = full_path[i], full_path[(i + 1) % size]
         cost += curr.dv[nxt][0]
-    return 1.0 / cost
+    return cost
 
 
 def mutate(individual: list[AccessPoint]) -> list[AccessPoint]:
-    size = len(individual)
-    copy = individual[:]
-    # Generate 2 indexes and swap the elements
-    i, j = sample(range(size), k=2)
-    copy[i], copy[j] = copy[j], copy[i]
-
-    return copy
-
-
-def crossover(a: list[AccessPoint], b: list[AccessPoint]) -> list[AccessPoint]:
-    all_elements = set(a).union(set(b))
-    size = len(a)  # Assume equal length
-
-    while True:
-        idx = randint(0, size - 1)
-        child_a, child_b = (a[:idx] + b[idx:]), (b[:idx] + a[idx:])
-
-        # Keep the better child
-        better_child = max([child_a, child_b], key=fitness)
-        if set(better_child) == all_elements:
-            break
-
-    return better_child
-
-
-def genetic(item_nodes, rounds=3) -> tuple[list[list[AccessPoint]], list[float]]:
-    def show_individual(individual):
-        return f"{[n.coord for n in individual]}"
-
-    population = generate_population(item_nodes, size=10)
-
-    print("Generated initial population by randomly sampling from permutations: ")
-    for idx, individual in enumerate(population):
-        print(
-            f"{idx}: {show_individual(individual)}, Fitness={fitness(individual):.4f}"
+    mutated_individual = individual.copy()
+    if random() < MUTATION_RATE:
+        size = len(individual)
+        # Generate 2 indexes and swap the elements
+        i, j = sample(range(size), k=2)
+        mutated_individual[i], mutated_individual[j] = (
+            mutated_individual[j],
+            mutated_individual[i],
         )
 
-    n = 10
+    return mutated_individual
+
+
+def crossover(
+    a: list[AccessPoint],
+    b: list[AccessPoint],
+) -> list[AccessPoint]:
+    size = len(a)
+    crossover_point = randint(0, size - 1)
+    a_parent = [ap.parent for ap in a[:crossover_point]]
+    b_parent = [ap.parent for ap in b[:crossover_point]]
+    child_a = a[:crossover_point] + [ap for ap in b if ap.parent not in a_parent]
+    child_b = b[:crossover_point] + [ap for ap in a if ap.parent not in b_parent]
+
+    return child_a, child_b
+
+
+def genetic(
+    item_nodes, start_node, end_node, rounds=0
+) -> tuple[list[list[AccessPoint]], list[float]]:
+    def show_individual(individual, start_node, end_node):
+        individual_path = start_node.aps + individual + end_node.aps
+        return f"{[n.coord for n in individual_path]}"
+
+    # Keep population at a constant size
+    size = int(len(item_nodes) * (len(item_nodes) - 1) / 2)
+
+    if rounds == 0:
+        rounds = max(int((len(item_nodes) ** 2) / 2), 100)
+
+    population = generate_population(item_nodes, size=size)
+
     for r in range(rounds):
-        print(f"\nRound {r + 1}/{rounds}")
-        # Cross over best 2 for 5 times
-        print("\nCross over stage: ")
-        for _ in range(5):
-            a, b = sorted(population, key=lambda i: fitness(i), reverse=True)[:2]
-            child = crossover(a, b)
-            print(
-                f"{show_individual(child)} <== {show_individual(a)}, {show_individual(b)}"
+        for _ in range(int(size / 2)):
+            population.sort(
+                key=lambda individual: gt_cost(individual, start_node, end_node)
             )
-            population.append(child)
+            [parent_a, parent_b] = population[:2]
+            child_a, child_b = crossover(parent_a, parent_b)
+            mutated_child_a = mutate(child_a)
+            mutated_child_b = mutate(child_b)
+            population.extend([mutated_child_a, mutated_child_b])
 
-        # Mutate best 5 to yield 5 children
-        print("\nMutation stage: ")
-        population = sorted(population, key=lambda i: fitness(i), reverse=True)
-        for _ in range(5):
-            parent = population[_]
-            child = mutate(parent)
-            print(f"{show_individual(child)} <== {show_individual(parent)}")
-            population.append(child)
-
-        # Sort population by fitness and keep the best n individual
-        population = sorted(population, key=lambda i: fitness(i), reverse=True)[:n]
-
-        print("\nRound finished; showing best 10 individuals from population: ")
-        for idx, individual in enumerate(population):
-            print(
-                f"{idx}: {show_individual(individual)}, Fitness={fitness(individual):.4f}"
-            )
-
-        print(
-            f"Best result: {show_individual(individual)}, Fitness={fitness(individual):.4f}, Route Cost={1/fitness(individual)}"
+        population.sort(
+            key=lambda individual: gt_cost(individual, start_node, end_node)
         )
+        population = population[:size]
 
-    return population, list(map(fitness, population))
+    return (
+        gt_cost(population[0], start_node, end_node),
+        start_node.aps + population[0] + end_node.aps,
+    )
