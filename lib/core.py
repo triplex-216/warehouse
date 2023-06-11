@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 from math import floor
 import os
+import heapq
 
 """ Configuration Constants """
 # Initializes the map with specific size
@@ -12,7 +13,29 @@ DEFAULT_COLS = 40
 
 """ Data processing """
 
+class PriorityQueue:
+    """
+    An implementation of Priority Queue with heapq
+    Generated with ChatGPT
+    """
 
+    def __init__(self):
+        self._queue = []
+        self._index = 0
+
+    def is_empty(self):
+        return len(self._queue) == 0
+
+    def enqueue(self, item, priority1, priority2=None):
+        heapq.heappush(self._queue, (priority1, priority2, self._index, item))
+        self._index += 1
+
+    def dequeue(self):
+        if self.is_empty():
+            raise IndexError("Priority queue is empty")
+        priority1, _, _, item = heapq.heappop(self._queue)
+        return priority1, item
+    
 class AccessPoint:
     def __init__(self, coord: tuple[int, int], parent: Node) -> None:
         self.coord = coord
@@ -221,20 +244,15 @@ def get_item(product_db: dict, id_list: list) -> list[tuple]:
 
 # Read order list from the file
 def read_order_file(file_path):
-    id = []
-    order_list = []
-
+    order_list = {}
     if os.path.exists(file_path):
-        id_index = 1
+        id = 1
         with open(file_path) as csvfile:
             reader = csv.reader(csvfile, delimiter="\t")
             for curr in reader:
-                id.append(id_index)
-                id_index += 1
-                # Make string to list
-                order_list.append([int(num) for num in curr[0].split(",")])
-
-    return id, order_list
+                order_list[id] = [int(num) for num in curr[0].split(",")]
+                id += 1
+    return order_list
 
 def is_valid(map, coord):
     valid = True

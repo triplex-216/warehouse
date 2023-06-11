@@ -1,5 +1,5 @@
 import heapq
-from .core import Node, AccessPoint
+from .core import Node, AccessPoint, PriorityQueue
 
 def greedy(
     nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint, init_ap: AccessPoint
@@ -53,13 +53,13 @@ def greedy(
 
 
 def nearest_neighbor(nodes: list[Node], start_ap: AccessPoint, end_ap: AccessPoint):
-    all_path = []
+    all_path = PriorityQueue()
     for node in nodes:
         for ap in node.aps:
             cost, path = greedy(nodes, start_ap, end_ap, ap)
-            heapq.heappush(all_path, (cost, id(path), path))
+            all_path.enqueue(path, cost)
 
-    bestcost, _id, bestpath = heapq.heappop(all_path)
+    bestcost, bestpath = all_path.dequeue()
     return bestcost, bestpath
 
 

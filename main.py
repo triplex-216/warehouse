@@ -273,14 +273,13 @@ def get_item_ids(conf: Config):
 
         elif id_src in ['A', 'a']:
             file_path = ORDER_LIST_FILE
-            order_ids, order_list = read_order_file(file_path)
+            order_list = read_order_file(file_path)
             # Check if there's problem with the file
-            if len(order_ids) == 0:
+            if len(order_list) == 0:
                 warn(
                     "The file doesn't exist or it is empty! Please check the file path!"
                 )
                 break
-            order_set = set(order_ids)
 
             use_custom_order_id = input_data_as_list(
                 "Do you want to pick a specific order next? ",
@@ -289,22 +288,24 @@ def get_item_ids(conf: Config):
             )[0]
 
             if use_custom_order_id:
-                order_id = input_data_as_list(
-                    f"Please give an valid id of order (1 - {len(order_ids)}) ",
-                    "d",
-                    1,
-                )[0]
+                while True:
+                    order_id = input_data_as_list(
+                        f"Please give an valid id of order (1 - {len(order_list.keys())}) ",
+                        "d",
+                        1,
+                    )[0]
+                    try:
+                        item_ids = order_list[order_id]
+                        print(f"Now use order {order_id}: {item_ids}")
+                        break
+                    except KeyError:
+                        warn("The id is invalid. Please try again!")
             else:  # Randomly pick an unhandled order
-                order_id = choice(list(order_set))
-
-            if order_id in order_set:
-                item_ids = order_list[order_id - 1]
-            else:
-                warn("The number is invalid. Please try again!")
+                item_ids = choice(order_list)
             break
         else:
             warn("Please give a correct input! ")
-            loc_src = input("> ")
+            id_src = input("> ")
 
     return item_ids
 

@@ -1,35 +1,9 @@
 from __future__ import annotations
 import numpy as np
-from .core import Node, SingleNode, AccessPoint
+from .core import Node, SingleNode, AccessPoint, PriorityQueue
 from random import choice
 from math import floor
 from copy import deepcopy, copy
-
-import heapq
-
-
-class PriorityQueue:
-    """
-    An implementation of Priority Queue with heapq
-    Generated with ChatGPT
-    """
-
-    def __init__(self):
-        self._queue = []
-        self._index = 0
-
-    def is_empty(self):
-        return len(self._queue) == 0
-
-    def enqueue(self, item, priority1, priority2):
-        heapq.heappush(self._queue, (priority1, priority2, self._index, item))
-        self._index += 1
-
-    def dequeue(self):
-        if self.is_empty():
-            raise IndexError("Priority queue is empty")
-        _, _, _, item = heapq.heappop(self._queue)
-        return item
 
 
 class TreeNode:
@@ -118,7 +92,7 @@ def branch_and_bound(
 
     while pq:
         current_tree_node: TreeNode
-        current_tree_node = pq.dequeue()
+        _, current_tree_node = pq.dequeue()
         current_ap = current_tree_node.path[-1]
 
         current_path = current_tree_node.path
