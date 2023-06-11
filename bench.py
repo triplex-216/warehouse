@@ -103,17 +103,13 @@ if __name__ == "__main__":
         print(f"Testing nearest neighbor with input {order}...")
         nn_times.append(
             get_avg_runtime(
-                lambda: find_route_with_timeout(
-                    item_nodes, start_node, end_node, "n", -1
-                )
+                lambda: find_route(item_nodes, start_node, end_node, "n", -1)
             )
         )
         print(f"Testing BnB with input {order}...")
         bnb_times.append(
             get_avg_runtime(
-                lambda: find_route_with_timeout(
-                    item_nodes, start_node, end_node, "b", -1
-                )
+                lambda: find_route(item_nodes, start_node, end_node, "b", -1)
             )
         )
 

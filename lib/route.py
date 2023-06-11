@@ -194,37 +194,6 @@ def get_step_instructions(trace: list[tuple]):
     return instruction_str
 
 
-def find_route(
-    item_nodes: list[Node],
-    start_node: SingleNode,
-    end_node: SingleNode,
-    algorithm="g",
-    shared_list: list = [],
-):
-    # Calculate the graph(distance and route between all the accessible entries)
-    start_ap, end_ap = start_node.aps_all[0], end_node.aps_all[0]
-    nodes = [start_node] + item_nodes + [end_node]
-    generate_cost_graph(nodes, start_node=start_node, end_node=end_node)
-
-    if algorithm == "b":  # branch and bound
-        total_cost, path = branch_and_bound(nodes, start_ap, end_ap)
-    elif algorithm == "g":  # greedy
-        total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
-    elif algorithm == "n":  # nearest neighbor
-        total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
-    elif algorithm == "t":
-        total_cost, path = genetic(item_nodes, start_node, end_node)
-    elif algorithm == "f":  # fallback
-        total_cost, path = default(nodes, start_ap, end_ap)
-
-    instructions, route = path_instructions(path, start_ap, end_ap)
-
-    # Save return values as tuple into shared list for use in timeout monitor function
-    shared_list.append((instructions, total_cost, route))
-
-    return instructions, total_cost, route
-
-
 def load_animation():
     while True:
         for c in "|/-\\":
@@ -232,13 +201,57 @@ def load_animation():
             sleep(0.1)
 
 
-def find_route_with_timeout(
+def find_route(
     item_nodes: list[Node],
     start_node: SingleNode,
     end_node: SingleNode,
     algorithm: str,
     timeout: int,
 ):
+    """
+    Find route with the specified algorithm. The algorithm process will be killed
+    after timeout.
+
+    NOTE: Timeout = -1 disables timeout, and the algorithm will run indefinitely or
+    until it uses too much RAM.
+    """
+
+    def _find_route(
+        item_nodes: list[Node],
+        start_node: SingleNode,
+        end_node: SingleNode,
+        algorithm="g",
+        shared_list: list = [],
+    ):
+        """
+        NOTE: Do not use this function directly, as it has the potential to use up all
+        RAM when running BnB with an input that is large enough.
+        Use find_route_with_timeout for RAM protection and timeout if wished.
+        """
+
+        # Calculate the graph(distance and route between all the accessible entries)
+        start_ap, end_ap = start_node.aps_all[0], end_node.aps_all[0]
+        nodes = [start_node] + item_nodes + [end_node]
+        generate_cost_graph(nodes, start_node=start_node, end_node=end_node)
+
+        if algorithm == "b":  # branch and bound
+            total_cost, path = branch_and_bound(nodes, start_ap, end_ap)
+        elif algorithm == "g":  # greedy
+            total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
+        elif algorithm == "n":  # nearest neighbor
+            total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
+        elif algorithm == "t":
+            total_cost, path = genetic(item_nodes, start_node, end_node)
+        elif algorithm == "f":  # fallback
+            total_cost, path = default(nodes, start_ap, end_ap)
+
+        instructions, route = path_instructions(path, start_ap, end_ap)
+
+        # Save return values as tuple into shared list for use in timeout monitor function
+        shared_list.append((instructions, total_cost, route))
+
+        return instructions, total_cost, route
+
     manager = multiprocessing.Manager()
     shared_list = manager.list()
     timeout_triggered = False  # Timeout indicator
@@ -247,20 +260,20 @@ def find_route_with_timeout(
         target=load_animation,
     )
     algorithm_process = multiprocessing.Process(
-        target=find_route,
+        target=_find_route,
         args=(item_nodes, start_node, end_node, algorithm, shared_list),
     )
 
     animation_process.start()
     algorithm_process.start()
 
-    if timeout == -1: # No timeout
+    if timeout == -1:  # No timeout
         timeout = float("inf")
     t_start = time()
     while True:
         sleep(0.1)
-        if algorithm_process.is_alive(): 
-            if time() - t_start > timeout: 
+        if algorithm_process.is_alive():
+            if time() - t_start > timeout:
                 print(f"Algorithm timed out! Using fallback algorithm...")
                 timeout_triggered = True
                 break
@@ -269,24 +282,24 @@ def find_route_with_timeout(
                 print(f"Algorithm is using too much RAM! Using fallback algorithm...")
                 timeout_triggered = True
                 break
-            
-        else: 
+
+        else:
             # Algorithm finished successfully
             instructions, total_cost, route = shared_list[0]
             break
 
-    if timeout_triggered: 
+    if timeout_triggered:
         # If the algorithm is still alive after timeout, terminate the algorithm
         # and fallback to the default order
         algorithm_process.terminate()
         algorithm_process.join()
 
-        instructions, total_cost, route = find_route(
+        instructions, total_cost, route = _find_route(
             item_nodes,
             start_node,
             end_node,
             "n",  # Use Nearest Neighbor algorithm as fallback (no timeout)
-        )            
+        )
 
     # Stop the loading animation
     animation_process.terminate()

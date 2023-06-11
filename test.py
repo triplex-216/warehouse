@@ -69,14 +69,14 @@ def run_bnb():
 
     generate_cost_graph(all_nodes, start_node, end_node)
 
-    bnb_instr, bnb_total_cost, bnb_route, _ = find_route_with_timeout(
+    bnb_instr, bnb_total_cost, bnb_route, _ = find_route(
         item_nodes=item_nodes,
         start_node=start_node,
         end_node=end_node,
         algorithm="b",
         timeout=15,
     )
-    nn_instr, nn_total_cost, nn_route, _ = find_route_with_timeout(
+    nn_instr, nn_total_cost, nn_route, _ = find_route(
         item_nodes=item_nodes,
         start_node=start_node,
         end_node=end_node,

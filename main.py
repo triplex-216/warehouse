@@ -184,7 +184,7 @@ def start_routing(conf: Config):
         end_node = SingleNode(coord=conf.end_position, map=map_data)
     
         #start find route
-        instr, total_cost, route, timeout = find_route_with_timeout(
+        instr, total_cost, route, timeout = find_route(
             item_nodes=item_nodes,
             start_node=start_node,
             end_node=end_node,
