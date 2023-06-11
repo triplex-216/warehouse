@@ -236,8 +236,17 @@ def read_order_file(file_path):
 
     return id, order_list
 
-def is_not_shelf(map, coord):
-    return map[coord[0]][coord[1]] == 0
+def is_valid(map, coord):
+    valid = True
+    if len(coord) != 2 or coord[0] not in range(len(map)) or coord[1] not in range(len(map[0])):
+        print("Invalid coordinate, please re-enter.")
+        valid = False
+    elif map[coord[0]][coord[1]] == 1:
+        print(
+                f"Position {coord} is a shelve, please try another position."
+            )
+        valid = False
+    return valid
 
 def get_aps(map, node: tuple) -> list[tuple[tuple, tuple]]:
     aps = []  # list record dir and ap coord

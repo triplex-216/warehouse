@@ -87,36 +87,41 @@ def input_timeout_value(conf: Config):
 
 
 def input_start_end_pos(conf: Config):
-    while True:
-        print(
+    print(
             "Please enter the start position (format: x, y - split by a comma)"
         )
-        start_position = tuple(
-            int(num) for num in input("> ").split(",")
-        )
-        if is_not_shelf(conf.map_data, start_position):
+    while True:
+        try:
+            start_position = tuple(
+                int(num) for num in input("> ").split(",")
+            )
+        except ValueError:
+            print("Invalid input format.")
+            continue
+        if is_valid(conf.map_data, start_position):
             print(f"Set start position to {start_position}.")
             conf.start_position = start_position
             break
         else:
-            print(
-                f"Position {start_position} is a shelve, please re-enter another position."
-            )
-    while True:
-        print(
+            continue
+
+    print(
             "Please enter the end position (format: x, y - split by a comma)"
         )
-        end_position = tuple(
-            int(num) for num in input("> ").split(",")
-        )
-        if is_not_shelf(conf.map_data, end_position):
+    while True:
+        try:
+            end_position = tuple(
+                int(num) for num in input("> ").split(",")
+            )
+        except ValueError:
+            print("Invalid input format.")
+            continue  
+        if is_valid(conf.map_data, end_position):
             print(f"Set end position to {end_position}.")
             conf.end_position = end_position
             break
         else:
-            print(
-                f"Position {end_position} is a shelve, please re-enter another position."
-            )
+            continue
  
     return start_position, end_position
 
@@ -225,82 +230,81 @@ def start_routing(conf: Config):
 
 def get_item_ids(conf: Config):
     # Allow user to input items' id manually or get them from an existing file
-    loc_src = input_data_as_list(
+    id_src = input_data_as_list(
         "Do you want to input the order manually or automatically get it from an existing file? (M/A)",
         "s",
         1,
     )[0]
 
     while True:
-        match loc_src:
-            case "M":
-                item_count = input_data_as_list(
-                    "How many items would you like to fetch? ", "d", 1
-                )[0]
-                item_ids = input_data_as_list(
-                    "Please input IDs of the items you wish to add to list",
-                    "d",
-                    item_count,
+        if id_src in ['M', 'm']:
+            item_count = input_data_as_list(
+                "How many items would you like to fetch? ", "d", 1
+            )[0]
+            item_ids = input_data_as_list(
+                "Please input IDs of the items you wish to add to list",
+                "d",
+                item_count,
+            )
+            change_pos = input_data_as_list(
+                "Do you want to change the start/end position now?",
+                "b",
+                1,
+            )[0]
+            if change_pos:
+                input_start_end_pos(conf=conf)
+            # DEBUG FEATURE: Pick random item when specified item ID does not exist
+            if conf.use_random_item:
+                valid_ids = list(conf.prod_db.keys())
+                # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
+                for idx, i in enumerate(item_ids):
+                    if i not in valid_ids:
+                        # Replace invalid ID with random item
+                        random_item_id = item_ids[0]
+                        while (
+                            random_item_id in item_ids
+                        ):  # Avoid duplicate ID; chance is extremely low
+                            random_item_id = choice(valid_ids)
+                        item_ids[idx] = random_item_id
+                        debug(
+                            f"Item {i} does not exist, replacing it with {random_item_id}! "
+                        )
+            break
+
+        elif id_src in ['A', 'a']:
+            file_path = ORDER_LIST_FILE
+            order_ids, order_list = read_order_file(file_path)
+            # Check if there's problem with the file
+            if len(order_ids) == 0:
+                warn(
+                    "The file doesn't exist or it is empty! Please check the file path!"
                 )
-                change_pos = input_data_as_list(
-                    "Do you want to change the start/end position now?",
-                    "b",
+                break
+            order_set = set(order_ids)
+
+            use_custom_order_id = input_data_as_list(
+                "Do you want to pick a specific order next? ",
+                "b",
+                1,
+            )[0]
+
+            if use_custom_order_id:
+                order_id = input_data_as_list(
+                    f"Please give an valid id of order (1 - {len(order_ids)}) ",
+                    "d",
                     1,
                 )[0]
-                if change_pos:
-                    input_start_end_pos(conf=conf)
-                # DEBUG FEATURE: Pick random item when specified item ID does not exist
-                if conf.use_random_item:
-                    valid_ids = list(conf.prod_db.keys())
-                    # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
-                    for idx, i in enumerate(item_ids):
-                        if i not in valid_ids:
-                            # Replace invalid ID with random item
-                            random_item_id = item_ids[0]
-                            while (
-                                random_item_id in item_ids
-                            ):  # Avoid duplicate ID; chance is extremely low
-                                random_item_id = choice(valid_ids)
-                            item_ids[idx] = random_item_id
-                            debug(
-                                f"Item {i} does not exist, replacing it with {random_item_id}! "
-                            )
-                break
+            else:  # Randomly pick an unhandled order
+                order_id = choice(list(order_set))
 
-            case "A":
-                file_path = ORDER_LIST_FILE
-                order_ids, order_list = read_order_file(file_path)
-                # Check if there's problem with the file
-                if len(order_ids) == 0:
-                    warn(
-                        "The file doesn't exist or it is empty! Please check the file path!"
-                    )
-                    break
-                order_set = set(order_ids)
-
-                use_custom_order_id = input_data_as_list(
-                    "Do you want to pick a specific order next? ",
-                    "b",
-                    1,
-                )[0]
-
-                if use_custom_order_id:
-                    order_id = input_data_as_list(
-                        f"Please give an valid id of order (1 - {len(order_ids)}) ",
-                        "d",
-                        1,
-                    )[0]
-                else:  # Randomly pick an unhandled order
-                    order_id = choice(list(order_set))
-
-                if order_id in order_set:
-                    item_ids = order_list[order_id - 1]
-                else:
-                    warn("The number is invalid. Please try again!")
-                break
-            case _:
-                warn("Please give a correct input! ")
-                loc_src = input("> ")
+            if order_id in order_set:
+                item_ids = order_list[order_id - 1]
+            else:
+                warn("The number is invalid. Please try again!")
+            break
+        else:
+            warn("Please give a correct input! ")
+            loc_src = input("> ")
 
     return item_ids
 

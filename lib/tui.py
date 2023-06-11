@@ -1,4 +1,3 @@
-from .core import Config
 from numpy import transpose
 
 
