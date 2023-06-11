@@ -57,9 +57,10 @@ def branch_and_bound(
         from numba import jit
 
         f_reduce_matrix = jit(nopython=True)(reduce_matrix)
-        print("Using Numba JIT to improve BnB performance. ")
+        # print("Using Numba JIT to improve BnB performance. ")
     except ModuleNotFoundError:
-        print("Numba not found. Running BnB with native CPython. ")
+        # print("Numba not found. Running BnB with native CPython. ")
+        pass
 
     # 1. Setup the initial matrix and reduce
     init_mat, dict_ap_to_idx = setup_matrix(nodes=nodes)
