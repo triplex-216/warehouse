@@ -17,6 +17,8 @@ CONF = Config(
     start_position=(0, 0),
     end_position=(0, 0),
     default_timeout_value=15,
+    map_data=None,
+    prod_db=None,
 )
 
 ALGS = {
@@ -138,31 +140,25 @@ settings_menu = Menu(
 
 """ Start """
 
-
 def start_routing(conf: Config):
     # Read inventory data from text file
-    map_data, prod_db = read_inventory_data(DATASET_FILE)
+    map_data = conf.map_data
+    prod_db = conf.prod_db
     cols, rows = len(map_data), len(map_data[0])
     while True:
         # Get item ids from user input
-        item_ids, override_start_position, override_end_position = get_item_ids(
-            map_data, prod_db, conf
-        )
-        item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
+        item_ids = get_item_ids(conf)
+        item_locations = [prod_db[id] for id in item_ids]
         if len(item_locations) == 0:
             warn("The item(s) requested are not available at the moment. ")
             return -1
-        # use prod instance
-        items = get_item(prod_db, item_ids)
-        item_nodes = [prod_to_node(prod) for prod in items]
+        # use node instance
+        item_nodes = prod_to_node(prod_db, map_data, item_ids)
         # use single node instance
         start_node = SingleNode(coord=conf.start_position, map=map_data)
         end_node = SingleNode(coord=conf.end_position, map=map_data)
-        if override_start_position:  # If start_position overridden
-            start_node = SingleNode(coord=override_start_position, map=map_data)
-        if override_end_position:  # If end_position overridden
-            end_node = SingleNode(coord=override_end_position, map=map_data)
-
+    
+        #start find route
         instr, total_cost, route, timeout = find_route_with_timeout(
             item_nodes=item_nodes,
             start_node=start_node,
@@ -207,9 +203,7 @@ def start_routing(conf: Config):
             break
 
 
-def get_item_ids(map_data, prod_db, conf: Config):
-    override_start_position = None
-    override_end_position = None
+def get_item_ids(conf: Config):
     # Allow user to input items' id manually or get them from an existing file
     loc_src = input_data_as_list(
         "Do you want to input the order manually or automatically get it from an existing file? (M/A)",
@@ -263,7 +257,7 @@ def get_item_ids(map_data, prod_db, conf: Config):
 
                 # DEBUG FEATURE: Pick random item when specified item ID does not exist
                 if conf.use_random_item:
-                    valid_ids = list(prod_db.keys())
+                    valid_ids = list(conf.prod_db.keys())
                     # item_ids = valid_ids[:-10] + [22]  # Test the duplication check
                     for idx, i in enumerate(item_ids):
                         if i not in valid_ids:
@@ -314,7 +308,8 @@ def get_item_ids(map_data, prod_db, conf: Config):
                 warn("Please give a correct input! ")
                 loc_src = input("> ")
 
-    return item_ids, override_start_position, override_end_position
+    return item_ids
+
 
 
 """ Main Menu """
@@ -339,9 +334,8 @@ def main():
             print(f"File {path} not found! Exiting...")
             return -1
 
-    map_data, prod_db = read_inventory_data(DATASET_FILE)
-    cols, rows = len(map_data), len(map_data[0])
-    map_text = draw_text_map(map_data)
+    read_inventory_data(DATASET_FILE, CONF)
+    map_text = draw_text_map(CONF.map_data)
     print_map(map_text)
 
     main_menu.enter()

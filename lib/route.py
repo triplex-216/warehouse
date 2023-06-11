@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import heapq
+from collections import defaultdict
 from itertools import combinations, product
 from .core import *
 from .bnb import *
@@ -12,8 +13,15 @@ from time import sleep
 import sys
 
 
-def prod_to_node(prod: Prod):
-    return Node(prod.id, (prod.x, prod.y), prod._map)
+def prod_to_node(prod_db, map_data, id_list):
+    coord_to_ids = defaultdict(list)
+    nodes = []
+    for id in id_list:
+        coord = prod_db[id]
+        coord_to_ids[coord].append(id)
+    for coord, id in coord_to_ids.items():
+        nodes.append(Node(id, coord, map_data))
+    return nodes
 
 
 def generate_cost_graph(
@@ -122,7 +130,7 @@ def path_instructions(
         trace = ap.dv[next][1]
         route += trace[1:]
         instruction_str += get_step_instructions(trace)
-        if next.parent.id == -1:
+        if next.parent.id == [-1]:
             instruction_str += "Return to the end position!\n"
         else:
             instruction_str += f"Pick up the product {next.parent.id}!\n"

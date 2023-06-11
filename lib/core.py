@@ -52,7 +52,7 @@ class Node:
     documentation for usage.
     """
 
-    def __init__(self, id: int, coord: tuple[int, int], map) -> None:
+    def __init__(self, id: list, coord: tuple[int, int], map) -> None:
         self.id, self.coord = id, coord
 
         # The product's neighbors; initialized with empty elements and will be updated later
@@ -120,7 +120,7 @@ class SingleNode(Node):
     """
 
     def __init__(self, coord, map, access_self=True):
-        super().__init__(-1, coord, map)  # Initialize APs like a normal Node
+        super().__init__([-1], coord, map)  # Initialize APs like a normal Node
 
         if access_self:
             # If the node's grid itself can be accessed,
@@ -140,20 +140,6 @@ class SingleNode(Node):
                 if self._ap[direction]:
                     drop = False  # Drop APs on other directions
 
-
-class Prod:
-    def __init__(self, id: int, x: int, y: int, map) -> None:
-        self.id, self.x, self.y = id, x, y
-
-        # the product's neighbors; initialized with an empty list and will be updated after the first call of get_neighbors
-        self._neigh = []
-        # reference to the map from which this product instance was created
-        self._map = map
-
-    def get_location(self):
-        return (self.x, self.y)
-
-
 class Config:
     def __init__(
         self,
@@ -163,6 +149,8 @@ class Config:
         start_position=(0, 0),
         end_position=(0, 0),
         default_timeout_value=60,
+        map_data=None,
+        prod_db=None,
     ) -> None:
         self.use_random_item = use_random_item
         self.save_instructions = save_instructions
@@ -170,10 +158,12 @@ class Config:
         self.start_position = start_position
         self.end_position = end_position
         self.default_timeout_value = default_timeout_value
+        self.map_data = map_data
+        self.prod_db = prod_db
 
 
 # Read data from the file
-def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
+def read_inventory_data(file_path: str, conf: Config) -> tuple[list[list[int]], dict[tuple]]:
     """
     Input:
         file_path: Path to the inventory dataset file
@@ -212,13 +202,13 @@ def read_inventory_data(file_path: str) -> tuple[list[list[int]], dict[Prod]]:
     for i, c, r in zip(id, col, row):
         # Set all shelves to 1
         map_data[c][r] = 1
+        prod_db[i] = (c, r)
 
-        prod_db[i] = Prod(id=i, x=c, y=r, map=map_data)
+    conf.map_data = map_data
+    conf.prod_db = prod_db
 
-    return map_data, prod_db
 
-
-def get_item(product_db: dict, id_list: list) -> list[Prod]:
+def get_item(product_db: dict, id_list: list) -> list[tuple]:
     prod_list = []
     for id in id_list:
         try:
@@ -227,10 +217,6 @@ def get_item(product_db: dict, id_list: list) -> list[Prod]:
             print(f"Item {id} not found, skipping...")
 
     return prod_list
-
-
-def get_item_locations(product_db: dict, id_list: list) -> list[tuple[int, int]]:
-    return [item.get_location() for item in get_item(product_db, id_list)]
 
 
 # Read order list from the file
