@@ -256,13 +256,10 @@ def read_order_file(file_path):
 
 def is_valid(map, coord):
     valid = True
-    if len(coord) != 2 or coord[0] not in range(len(map)) or coord[1] not in range(len(map[0])):
-        print("Invalid coordinate, please try again.")
+    if coord[0] not in range(len(map)) or coord[1] not in range(len(map[0])):
+        print("Coordinate exceeds the range of map, please try again.")
         valid = False
     elif map[coord[0]][coord[1]] == 1:
-        print(
-                f"Position {coord} is a shelve, please try another position."
-            )
         valid = False
     return valid
 

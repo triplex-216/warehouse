@@ -84,7 +84,7 @@ def input_data_as_list(text: str, form: str, count: int) -> list:
     """
     res_list = []
 
-    if form not in ["d", "f", "s", "b"]:
+    if form not in ["d", "f", "s", "b", "c"]:
         raise Exception(
             "Format must be d(integer), f(float), s(string), or b(boolean). "
         )
@@ -98,6 +98,8 @@ def input_data_as_list(text: str, form: str, count: int) -> list:
             form_description = ""
         case "b":
             form_description = "Y/N"
+        case "c":
+            form_description = "x, y - split by a comma"
 
     print(text, end="")
     if form != "s": 
@@ -126,7 +128,14 @@ def input_data_as_list(text: str, form: str, count: int) -> list:
                         elif res in ["N", "n"]:
                             res = False
                         else:
-                            print("Please input Y/N")
+                            print("Wrong input format, please try again.")
+                            continue
+                    case "c":
+                        res = tuple(
+                            int(num) for num in res.split(",")
+                        )
+                        if len(res) != 2:
+                            print("Wrong input format, please try again.")
                             continue
 
                 res_list.append(res)
@@ -148,6 +157,10 @@ def color_text(text, color):
     green = '\033[92m'
     yellow = '\033[93m'
     blue = '\033[94m'
+    if color not in ['g', 'b', 'y', 'r']:
+        raise Exception(
+            "Color must be g(green), b(blue), y(yellow), r(red). "
+        )
     match color:
         case 'g':
             foreground_color = green
