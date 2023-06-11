@@ -4,7 +4,6 @@ from .route import Node, SingleNode, AccessPoint
 from random import choice
 from math import floor
 from copy import deepcopy, copy
-from numba import jit, njit, prange
 
 import heapq
 
@@ -78,10 +77,20 @@ def branch_and_bound(
 
         return mat
 
+    # 0. Use numba if possible
+    f_reduce_matrix = reduce_matrix
+    try:
+        from numba import jit
+
+        f_reduce_matrix = jit(nopython=True)(reduce_matrix)
+        print("Using Numba JIT to improve BnB performance. ")
+    except ModuleNotFoundError:
+        print("Numba not found. Running BnB with native CPython. ")
+
     # 1. Setup the initial matrix and reduce
     init_mat, dict_ap_to_idx = setup_matrix(nodes=nodes)
     # print_matrix(init_mat)
-    init_mat, init_reduced_cost = reduce_matrix(init_mat)
+    init_mat, init_reduced_cost = f_reduce_matrix(init_mat)
     # print_matrix(init_mat)
     # 3. Start branching
     # Randomly pick an ap
@@ -141,7 +150,7 @@ def branch_and_bound(
                 mark_as_visited(mat_copy, src_ap_idx, dest_ap_idx)
 
                 # Reduce the matrix
-                mat_copy, reduced_cost = reduce_matrix(mat_copy)
+                mat_copy, reduced_cost = f_reduce_matrix(mat_copy)
 
                 next_cost = current_tree_node.cost + reduced_cost + visit_cost
                 pq.enqueue(
@@ -190,7 +199,7 @@ def setup_matrix(nodes: list[Node | SingleNode]):
 
     return mat, dict_ap_to_idx
 
-@jit(nopython=True)
+
 def reduce_matrix(mat: np.ndarray):
     mat_size = mat.shape[0]
 

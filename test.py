@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
     print(f"Failed Cases: {failed_cases}")
 
-    # run_bnb()
-    import cProfile
+    run_bnb()
+    # import cProfile
 
-    cProfile.run("run_bnb()")
+    # cProfile.run("run_bnb()")
