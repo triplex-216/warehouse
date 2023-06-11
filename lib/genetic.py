@@ -68,25 +68,15 @@ def genetic(
         individual_path = start_node.aps + individual + end_node.aps
         return f"{[n.coord for n in individual_path]}"
 
-    # all_nodes = [start_node] + item_nodes + [end_node]
-
+    # Keep population at a constant size
     size = int(len(item_nodes) * (len(item_nodes) - 1) / 2)
 
     if rounds == 0:
-        rounds = min(int((len(item_nodes) ** 2) / 2), 30)
+        rounds = max(int((len(item_nodes) ** 2) / 2), 100)
 
     population = generate_population(item_nodes, size=size)
 
-    # print("Generated initial population by randomly sampling from permutations: ")
-    # for idx, individual in enumerate(population):
-    #     print(
-    #         f"{idx + 1}: {show_individual(individual, start_node, end_node)}, fitness={gt_cost(individual, start_node, end_node)}"
-    #     )
-
     for r in range(rounds):
-        # print(f"\nRound {r + 1}/{rounds}")
-        # Cross over best 2
-        # print("\nCross over stage: ")
         for _ in range(int(size / 2)):
             population.sort(
                 key=lambda individual: gt_cost(individual, start_node, end_node)
@@ -101,18 +91,6 @@ def genetic(
             key=lambda individual: gt_cost(individual, start_node, end_node)
         )
         population = population[:size]
-
-        # print("\nRound finished; showing several best individuals from population: ")
-        # for idx, individual in enumerate(population):
-        #     if idx > 9:
-        #         break
-        #     print(
-        #         f"{idx + 1}: {show_individual(individual, start_node, end_node)}, fitness={gt_cost(individual, start_node, end_node)}"
-        #     )
-
-        # print(
-        #     f"Best result: {show_individual(population[0], start_node, end_node)}, fitness={gt_cost(population[0], start_node, end_node)}, Route Cost={gt_cost(population[0], start_node, end_node)}"
-        # )
 
     return (
         gt_cost(population[0], start_node, end_node),
