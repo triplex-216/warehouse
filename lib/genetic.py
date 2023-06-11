@@ -1,6 +1,8 @@
 from itertools import permutations
-from random import sample, randint, choice
+from random import sample, randint, choice, random
 from lib.route import Node, AccessPoint, SingleNode
+
+MUTATION_RATE = 0.1
 
 
 def generate_population(
@@ -32,26 +34,29 @@ def gt_cost(
 
 
 def mutate(individual: list[AccessPoint]) -> list[AccessPoint]:
-    size = len(individual)
-    copy = individual[:]
-    # Generate 2 indexes and swap the elements
-    i, j = sample(range(size), k=2)
-    copy[i], copy[j] = copy[j], copy[i]
+    mutated_individual = individual.copy()
+    if random() < MUTATION_RATE:
+        size = len(individual)
+        # Generate 2 indexes and swap the elements
+        i, j = sample(range(size), k=2)
+        mutated_individual[i], mutated_individual[j] = (
+            mutated_individual[j],
+            mutated_individual[i],
+        )
 
-    return copy
+    return mutated_individual
 
 
 def crossover(
     a: list[AccessPoint],
     b: list[AccessPoint],
 ) -> list[AccessPoint]:
-
     size = len(a)
     crossover_point = randint(0, size - 1)
-    a_parent = [ap.parent for ap in a[: crossover_point]]
-    b_parent = [ap.parent for ap in b[: crossover_point]]
-    child_a = a[: crossover_point] + [ap for ap in b if ap.parent not in a_parent]
-    child_b = b[: crossover_point] + [ap for ap in a if ap.parent not in b_parent]
+    a_parent = [ap.parent for ap in a[:crossover_point]]
+    b_parent = [ap.parent for ap in b[:crossover_point]]
+    child_a = a[:crossover_point] + [ap for ap in b if ap.parent not in a_parent]
+    child_b = b[:crossover_point] + [ap for ap in a if ap.parent not in b_parent]
 
     return child_a, child_b
 
@@ -72,37 +77,30 @@ def genetic(
 
     population = generate_population(item_nodes, size=size)
 
-    print("Generated initial population by randomly sampling from permutations: ")
-    for idx, individual in enumerate(population):
-        print(
-            f"{idx + 1}: {show_individual(individual, start_node, end_node)}, fitness={gt_cost(individual, start_node, end_node)}"
-        )
+    # print("Generated initial population by randomly sampling from permutations: ")
+    # for idx, individual in enumerate(population):
+    #     print(
+    #         f"{idx + 1}: {show_individual(individual, start_node, end_node)}, fitness={gt_cost(individual, start_node, end_node)}"
+    #     )
 
     for r in range(rounds):
-        print(f"\nRound {r + 1}/{rounds}")
+        # print(f"\nRound {r + 1}/{rounds}")
         # Cross over best 2
         # print("\nCross over stage: ")
         for _ in range(int(size / 2)):
-            [a, b] = sample(
-                sorted(population, key=lambda i: gt_cost(i, start_node, end_node)), k=2
+            population.sort(
+                key=lambda individual: gt_cost(individual, start_node, end_node)
             )
-            child_a, child_b = crossover(a, b)
+            [parent_a, parent_b] = population[:2]
+            child_a, child_b = crossover(parent_a, parent_b)
+            mutated_child_a = mutate(child_a)
+            mutated_child_b = mutate(child_b)
+            population.extend([mutated_child_a, mutated_child_b])
 
-            population.extend([child_a, child_b])
-
-        # Mutate best half to yield half children
-        # print("\nMutation stage: ")
-        population = sorted(population, key=lambda i: gt_cost(i, start_node, end_node))
-        for _ in range(int(size / 2)):
-            parent = population[_]
-            child = mutate(parent)
-            # print(f"{show_individual(child, start_node, end_node)} <== {show_individual(parent, start_node, end_node)}")
-            population.append(child)
-
-        # Sort population by gt_cost and keep the best n individual
-        population = sorted(population, key=lambda i: gt_cost(i, start_node, end_node))[
-            :size
-        ]
+        population.sort(
+            key=lambda individual: gt_cost(individual, start_node, end_node)
+        )
+        population = population[:size]
 
         # print("\nRound finished; showing several best individuals from population: ")
         # for idx, individual in enumerate(population):

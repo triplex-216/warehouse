@@ -66,7 +66,7 @@ test_order_lists = [
 
 
 if __name__ == "__main__":
-    order_list = [prod_db[item] for item in test_order_lists[2]]
+    order_list = [prod_db[item] for item in test_order_lists[3]]
     item_nodes = [prod_to_node(prod) for prod in order_list]
     
     start_node = SingleNode(coord=(0, 0), map=map_data)
