@@ -1,6 +1,5 @@
-from itertools import permutations
 from random import sample, randint, choice, random
-from lib.route import Node, AccessPoint, SingleNode
+from .core import Node, AccessPoint, SingleNode
 
 MUTATION_RATE = 0.1
 

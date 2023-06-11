@@ -1,6 +1,6 @@
 from __future__ import annotations
 import numpy as np
-from .route import Node, SingleNode, AccessPoint
+from .core import Node, SingleNode, AccessPoint
 from random import choice
 from math import floor
 from copy import deepcopy, copy
