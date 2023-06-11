@@ -1,5 +1,5 @@
 from numpy import transpose
-
+from colorama import Fore, Back, Style
 
 class Menu:
     """
@@ -143,6 +143,19 @@ def input_data_as_list(text: str, form: str, count: int) -> list:
 def bold_text(text=""):
     return f"\033[1m{text}\033[0m"
 
+def color_text(text, color):
+    match color:
+        case 'g':
+            foreground_color = Fore.GREEN
+        case 'b':
+            foreground_color = Fore.BLUE
+        case 'y':
+            foreground_color = Fore.YELLOW
+        case 'r':
+            foreground_color = Fore.RED
+
+    return f"{foreground_color}{text}{Style.RESET_ALL}"
+
 
 def warn(text=""):
     """
@@ -213,30 +226,11 @@ def add_paths_to_map(map_text, paths, pd_list: list[tuple[int, int]], back=False
     for pd in pd_list:
         x = pd[0]
         y = pd[1]
-        map_text[x][y] = bold_text("SH")
+        map_text[x][y] = color_text("SH", 'r')
 
-    # for i in range(1, len(paths)):
-    #     curr = paths[i - 1]
-    #     next = paths[i]
-    #     if curr[0] < next[0]:
-    #         map_text[curr[0] + 1][curr[1]] = bold_text("^^")
-    #     elif curr[0] > next[0]:
-    #         map_text[curr[0] - 1][curr[1]] = bold_text("vv")
-    #     elif curr[1] < next[1]:
-    #         map_text[curr[0]][curr[1] + 1] = bold_text(">>")
-    #     else:
-    #         map_text[curr[0]][curr[1] - 1] = bold_text("<<")
     for curr in paths:
-        map_text[curr[0]][curr[1]] = bold_text("##")
+        map_text[curr[0]][curr[1]] = color_text("##", 'b')
 
-    # # Change the arrow when the worker need to turn
-    # for i in range(2, len(paths)):
-    #     curr = paths[i]
-    #     before = paths[i - 1]
-    #     if map_text[curr[0]][curr[1]] != map_text[before[0]][before[1]]:
-    #         map_text[before[0]][before[1]] = map_text[curr[0]][curr[1]]
-
-    # If going back to origin, mark origin as "OR"
     if back:
         dest_x, dest_y = paths[-1][0], paths[-1][1]
         map_text[dest_x][dest_y] = bold_text("OR")  # "OR" for "origin"
