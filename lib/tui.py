@@ -1,5 +1,4 @@
 from numpy import transpose
-from colorama import Fore, Back, Style
 
 class Menu:
     """
@@ -144,17 +143,22 @@ def bold_text(text=""):
     return f"\033[1m{text}\033[0m"
 
 def color_text(text, color):
+    reset = '\033[0m'
+    red = '\033[91m'
+    green = '\033[92m'
+    yellow = '\033[93m'
+    blue = '\033[94m'
     match color:
         case 'g':
-            foreground_color = Fore.GREEN
+            foreground_color = green
         case 'b':
-            foreground_color = Fore.BLUE
+            foreground_color = blue
         case 'y':
-            foreground_color = Fore.YELLOW
+            foreground_color = yellow
         case 'r':
-            foreground_color = Fore.RED
+            foreground_color = red
 
-    return f"{foreground_color}{text}{Style.RESET_ALL}"
+    return f"{foreground_color}{text}{reset}"
 
 
 def warn(text=""):

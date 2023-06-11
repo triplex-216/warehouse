@@ -96,7 +96,7 @@ def input_start_end_pos(conf: Config):
                 int(num) for num in input("> ").split(",")
             )
         except ValueError:
-            print("Invalid input format.")
+            print("Invalid input format, please try again.")
             continue
         if is_valid(conf.map_data, start_position):
             print(f"Set start position to {start_position}.")
@@ -114,7 +114,7 @@ def input_start_end_pos(conf: Config):
                 int(num) for num in input("> ").split(",")
             )
         except ValueError:
-            print("Invalid input format.")
+            print("Invalid input format, please try again.")
             continue  
         if is_valid(conf.map_data, end_position):
             print(f"Set end position to {end_position}.")
@@ -320,7 +320,7 @@ def input_order_id(order_list):
             print(f"Now use order {order_id}: {item_ids}")
             return item_ids
         except KeyError:
-            warn("The id is invalid. Please try again!")
+            warn("Invalid order id. Please try again!")
 
 
 """ Main Menu """
