@@ -88,17 +88,37 @@ def input_timeout_value(conf: Config):
 
 def input_start_end_pos(conf: Config):
     while True:
-        print("Please enter the start position (format: x, y - split by a comma)")
-        start_x, start_y = [int(num) for num in input("> ").split(",")]
-        print("Please enter the end position (format: x, y - split by a comma)")
-        end_x, end_y = [int(num) for num in input("> ").split(",")]
-
-        break
-
-    conf.start_position = (start_x, start_y)
-    conf.end_position = (end_x, end_y)
-    print(f"Set start position to {(start_x, start_y)}.")
-    print(f"Set end position to {(end_x, end_y)}.")
+        print(
+            "Please enter the start position (format: x, y - split by a comma)"
+        )
+        start_position = tuple(
+            int(num) for num in input("> ").split(",")
+        )
+        if is_not_shelve(conf.map_data, start_position):
+            print(f"Set start position to {start_position}.")
+            conf.start_position = start_position
+            break
+        else:
+            print(
+                f"Position {start_position} is a shelve, please re-enter another position."
+            )
+    while True:
+        print(
+            "Please enter the end position (format: x, y - split by a comma)"
+        )
+        end_position = tuple(
+            int(num) for num in input("> ").split(",")
+        )
+        if is_not_shelve(conf.map_data, end_position):
+            print(f"Set end position to {end_position}.")
+            conf.end_position = end_position
+            break
+        else:
+            print(
+                f"Position {end_position} is a shelve, please re-enter another position."
+            )
+ 
+    return start_position, end_position
 
 
 def show_current_config(conf: Config):
@@ -228,33 +248,7 @@ def get_item_ids(conf: Config):
                     1,
                 )[0]
                 if change_pos:
-                    while True:
-                        print(
-                            "Please enter the start position (format: x, y - split by a comma)"
-                        )
-                        override_start_position = tuple(
-                            int(num) for num in input("> ").split(",")
-                        )
-                        if is_not_shelve(map_data, override_start_position):
-                            break
-                        else:
-                            print(
-                                f"Position {override_start_position} is a shelve, please re-enter another position."
-                            )
-                    while True:
-                        print(
-                            "Please enter the end position (format: x, y - split by a comma)"
-                        )
-                        override_end_position = tuple(
-                            int(num) for num in input("> ").split(",")
-                        )
-                        if is_not_shelve(map_data, override_end_position):
-                            break
-                        else:
-                            print(
-                                f"Position {override_end_position} is a shelve, please re-enter another position."
-                            )
-
+                    input_start_end_pos(conf=conf)
                 # DEBUG FEATURE: Pick random item when specified item ID does not exist
                 if conf.use_random_item:
                     valid_ids = list(conf.prod_db.keys())
