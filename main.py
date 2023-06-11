@@ -13,10 +13,10 @@ VERSION = "Final"
 CONF = Config(
     use_random_item=True,
     save_instructions=True,
-    default_algorithm="g",
+    default_algorithm="b",
     start_position=(0, 0),
     end_position=(0, 0),
-    default_timeout_value=10,
+    default_timeout_value=15,
 )
 
 ALGS = {
@@ -28,7 +28,9 @@ ALGS = {
 DATASET_FILE = "data/qvBox-warehouse-data-s23-v01.txt"
 ORDER_LIST_FILE = "data/qvBox-warehouse-orders-list-part01.txt"
 
-signal.signal(signal.SIGINT, signal.SIG_DFL) # Catches KeyboardInterrupt and prevents it from raising an error. 
+signal.signal(
+    signal.SIGINT, signal.SIG_DFL
+)  # Catches KeyboardInterrupt and prevents it from raising an error.
 
 """ Settings Menu """
 
@@ -52,8 +54,6 @@ def input_config_save_instructions(conf: Config):
 
 
 def input_default_algorithm(conf: Config):
-
-
     str_default_algorithm = input_data_as_list(
         "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy",
         "s",
@@ -97,7 +97,8 @@ def input_start_end_pos(conf: Config):
     print(f"Set start position to {(start_x, start_y)}.")
     print(f"Set end position to {(end_x, end_y)}.")
 
-def show_current_config(conf: Config): 
+
+def show_current_config(conf: Config):
     warn("Showing current config: ")
     print(f"Use random item: {conf.use_random_item}")
     print(f"Save instructions to file: {conf.save_instructions}")
@@ -105,6 +106,7 @@ def show_current_config(conf: Config):
     print(f"Start position: {conf.start_position}")
     print(f"End position: {conf.end_position}")
     print(f"Time out (seconds): {conf.default_timeout_value}")
+
 
 settings_menu = Menu(
     text="Settings menu",
@@ -126,11 +128,15 @@ settings_menu = Menu(
             "Start/End Position",
             lambda: input_start_end_pos(conf=CONF),
         ),
-        ("Show current configs", lambda: show_current_config(conf=CONF),)
+        (
+            "Show current configs",
+            lambda: show_current_config(conf=CONF),
+        ),
     ],
 )
 
 """ Start """
+
 
 def start_routing(conf: Config):
     # Read inventory data from text file
@@ -138,7 +144,9 @@ def start_routing(conf: Config):
     cols, rows = len(map_data), len(map_data[0])
     while True:
         # Get item ids from user input
-        item_ids, override_start_position, override_end_position = get_item_ids(map_data, prod_db, conf)
+        item_ids, override_start_position, override_end_position = get_item_ids(
+            map_data, prod_db, conf
+        )
         item_locations = get_item_locations(product_db=prod_db, id_list=item_ids)
         if len(item_locations) == 0:
             warn("The item(s) requested are not available at the moment. ")
@@ -153,8 +161,8 @@ def start_routing(conf: Config):
             start_node = SingleNode(coord=override_start_position, map=map_data)
         if override_end_position:  # If end_position overridden
             end_node = SingleNode(coord=override_end_position, map=map_data)
-        
-        instr, total_cost, route = find_route_with_timeout(
+
+        instr, total_cost, route, timeout = find_route_with_timeout(
             item_nodes=item_nodes,
             start_node=start_node,
             end_node=end_node,
@@ -172,7 +180,9 @@ def start_routing(conf: Config):
         warn("\nWAREHOUSE MAP\n")
         print_map(map_full)
         print(instr)
-        print(f"Total distance is {total_cost}.")
+        print(
+            f"Total distance is {total_cost}. (Calculated with {'Nearest Neighbor' if timeout else ALGS[conf.default_algorithm]})"
+        )
 
         # save result to file
         if conf.save_instructions:
@@ -186,7 +196,7 @@ def start_routing(conf: Config):
                 f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
                 gen_instruction_metadata() + instr,
             )
-        
+
         continue_ = input_data_as_list(
             "Do you want to continue fetching?",
             "b",
@@ -194,7 +204,6 @@ def start_routing(conf: Config):
         )[0]
         if not continue_:
             break
-
 
 
 def get_item_ids(map_data, prod_db, conf: Config):
@@ -228,18 +237,28 @@ def get_item_ids(map_data, prod_db, conf: Config):
                         print(
                             "Please enter the start position (format: x, y - split by a comma)"
                         )
-                        override_start_position = tuple(int(num) for num in input("> ").split(","))
+                        override_start_position = tuple(
+                            int(num) for num in input("> ").split(",")
+                        )
                         if is_not_shelve(map_data, override_start_position):
                             break
                         else:
-                            print(f"Position {override_start_position} is a shelve, please re-enter another position.")
+                            print(
+                                f"Position {override_start_position} is a shelve, please re-enter another position."
+                            )
                     while True:
-                        print("Please enter the end position (format: x, y - split by a comma)")
-                        override_end_position = tuple(int(num) for num in input("> ").split(","))
+                        print(
+                            "Please enter the end position (format: x, y - split by a comma)"
+                        )
+                        override_end_position = tuple(
+                            int(num) for num in input("> ").split(",")
+                        )
                         if is_not_shelve(map_data, override_end_position):
                             break
                         else:
-                            print(f"Position {override_end_position} is a shelve, please re-enter another position.")
+                            print(
+                                f"Position {override_end_position} is a shelve, please re-enter another position."
+                            )
 
                 # DEBUG FEATURE: Pick random item when specified item ID does not exist
                 if conf.use_random_item:
@@ -293,8 +312,9 @@ def get_item_ids(map_data, prod_db, conf: Config):
             case _:
                 warn("Please give a correct input! ")
                 loc_src = input("> ")
-    
+
     return item_ids, override_start_position, override_end_position
+
 
 """ Main Menu """
 
@@ -311,10 +331,10 @@ main_menu = Menu(
 
 def main():
     # Perform file check before launching
-    for path in [DATASET_FILE, ORDER_LIST_FILE]: 
-        if os.path.exists(path) and os.path.isfile(path): 
+    for path in [DATASET_FILE, ORDER_LIST_FILE]:
+        if os.path.exists(path) and os.path.isfile(path):
             continue
-        else: 
+        else:
             print(f"File {path} not found! Exiting...")
             return -1
 

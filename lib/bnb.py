@@ -96,7 +96,7 @@ def branch_and_bound(
     # Randomly pick an ap
     init_node = choice(nodes)
     # init_node = nodes[0]
-    print(f"Initializing BnB @ {init_node.coord}")
+    # print(f"Initializing BnB @ {init_node.coord}")
     init_aps = init_node.aps
 
     pq = PriorityQueue()
