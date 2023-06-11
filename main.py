@@ -281,7 +281,7 @@ def input_item_ids(conf):
             "How many items would you like to fetch? (0 - 50)", "d", 1
         )[0]
     while True:
-        if item_count <= 50:
+        if int(item_count) <= 50:
             item_ids = input_data_as_list(
                 "Please input IDs of the items you wish to add to list",
                 "d",
@@ -304,7 +304,7 @@ def input_item_ids(conf):
                         )
             return item_ids
         else:
-            print("Too many items! Please choose smaller amount!")
+            print("Too many items. Please choose smaller amount!")
             item_count = input("> ")
     
 
