@@ -9,8 +9,8 @@ from .bnb import *
 from .genetic import *
 from .nearest_neighbor import *
 import multiprocessing
-from time import sleep
-import sys
+from time import sleep, time
+from psutil import virtual_memory
 
 
 def prod_to_node(prod_db, map_data, id_list):
@@ -35,6 +35,15 @@ def generate_cost_graph(
 
     start_node and end_node can be absent
     """
+    # Clear all nodes' distance vectors to prevent accidentally accessing APs
+    # from other orders and cause BnB to eat up RAM
+
+    for n in nodes + [start_node] + [end_node]:
+        n: Node | SingleNode
+        ap: AccessPoint
+        for ap in n.aps:
+            ap.dv = dict()
+
     edges = 0
     for a, b in combinations(nodes, 2):
         ap_1: AccessPoint  # Type hints for IDE
@@ -111,6 +120,7 @@ def cost(map, start, end) -> tuple[int, list[tuple[int, int]]]:
 
     print(f"Path from {start} to {end} not found, check if it is a shelf!")
     return None
+
 
 def path_instructions(
     path: list[AccessPoint], start_ap: AccessPoint, end_ap: AccessPoint
@@ -215,15 +225,6 @@ def find_route(
     return instructions, total_cost, route
 
 
-def timer(timeout: int):
-    sleep(timeout)
-
-
-def clear_screen():
-    # print("\r", end="")
-    sys.stdout.write("\u001b[2K")
-
-
 def load_animation():
     while True:
         for c in "|/-\\":
@@ -253,11 +254,28 @@ def find_route_with_timeout(
     animation_process.start()
     algorithm_process.start()
 
-    algorithm_process.join(timeout=timeout)
-    if algorithm_process.is_alive():
-        print(f"Algorithm timed out! Using fallback algorithm...")
-        timeout_triggered = True
+    if timeout == -1: # No timeout
+        timeout = float("inf")
+    t_start = time()
+    while True:
+        sleep(0.1)
+        if algorithm_process.is_alive(): 
+            if time() - t_start > timeout: 
+                print(f"Algorithm timed out! Using fallback algorithm...")
+                timeout_triggered = True
+                break
 
+            elif virtual_memory().percent > 80:
+                print(f"Algorithm is using too much RAM! Using fallback algorithm...")
+                timeout_triggered = True
+                break
+            
+        else: 
+            # Algorithm finished successfully
+            instructions, total_cost, route = shared_list[0]
+            break
+
+    if timeout_triggered: 
         # If the algorithm is still alive after timeout, terminate the algorithm
         # and fallback to the default order
         algorithm_process.terminate()
@@ -268,11 +286,7 @@ def find_route_with_timeout(
             start_node,
             end_node,
             "n",  # Use Nearest Neighbor algorithm as fallback (no timeout)
-        )
-
-    else:
-        # The algorithm finished successfully before timeout
-        instructions, total_cost, route = shared_list[0]
+        )            
 
     # Stop the loading animation
     animation_process.terminate()

@@ -7,7 +7,9 @@ from lib.genetic import *
 from lib.bnb import *
 
 DATASET = "data/qvBox-warehouse-data-s23-v01.txt"
-map_data, prod_db = read_inventory_data(DATASET)
+conf = Config()
+read_inventory_data(DATASET, conf)
+prod_db, map_data = conf.prod_db, conf.map_data
 cols, rows = len(map_data), len(map_data[0])
 test_order_lists = [
     [108335],
@@ -56,7 +58,9 @@ test_order_lists = [
 
 
 def run_bnb():
-    item_nodes = [prod_to_node(prod_db[item]) for item in test_order_lists[1][:]]
+    order = test_order_lists[-1][:10]
+    print(len(order), order)
+    item_nodes = prod_to_node(prod_db=prod_db, map_data=map_data, id_list=order)
 
     start_node = SingleNode(coord=(0, 0), map=map_data)
     end_node = SingleNode(coord=(20, 20), map=map_data)
@@ -65,17 +69,19 @@ def run_bnb():
 
     generate_cost_graph(all_nodes, start_node, end_node)
 
-    bnb_instr, bnb_total_cost, bnb_route = find_route(
+    bnb_instr, bnb_total_cost, bnb_route, _ = find_route_with_timeout(
         item_nodes=item_nodes,
         start_node=start_node,
         end_node=end_node,
         algorithm="b",
+        timeout=15,
     )
-    nn_instr, nn_total_cost, nn_route = find_route(
+    nn_instr, nn_total_cost, nn_route, _ = find_route_with_timeout(
         item_nodes=item_nodes,
         start_node=start_node,
         end_node=end_node,
         algorithm="n",
+        timeout=15,
     )
 
     print(f"Total distance is {len(bnb_route)} using BnB algorithm.")

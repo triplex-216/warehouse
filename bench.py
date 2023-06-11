@@ -50,12 +50,22 @@ TEST_CASES = [
     ],
 ]
 DEFAULT_REPS = (
-    5  # Default repetitions to test each algorithm and calculate an average time
+    1  # Default repetitions to test each algorithm and calculate an average time
 )
 
 
-def get_avg_runtime(func, reps=DEFAULT_REPS):
-    execution_time = timeit.timeit(func, number=reps) / reps
+def get_avg_runtime(f_alg, reps=DEFAULT_REPS):
+    t_start = time()
+
+    for _ in range(reps):
+        res = f_alg()
+        triggered_time_out = res[-1]
+        if triggered_time_out:
+            failed = True
+            print("One of the function evaluations failed. ")
+            return float("inf")
+
+    execution_time = time() - t_start
     return execution_time
 
 
@@ -67,39 +77,42 @@ def get_peak_mem():
 
 if __name__ == "__main__":
     # startup phase
-    warehouse_map, prod_db = read_inventory_data(
-        "data/qvBox-warehouse-data-s23-v01.txt"
-    )
+    conf = Config()
+
+    read_inventory_data("data/qvBox-warehouse-data-s23-v01.txt", conf=conf)
+    prod_db = conf.prod_db
+    map_data = conf.map_data
 
     # testing phase
 
     nn_times = []
-    bab_times = []
-    test_cases_truncated = []
-    for idx, case in enumerate(TEST_CASES):
-        test_cases_truncated.append(sample(case, idx + 1))
-    for idx, order in enumerate(test_cases_truncated):
-        # if len(order) >= 5:
-        #     order = sample(order, k=5)  # limit to 5 inputs for bnb's sake
+    bnb_times = []
+    # test_cases = TEST_CASES[:3]
 
-        items = get_item(prod_db, order)
-        item_nodes = [prod_to_node(prod) for prod in items]
-        start_node = SingleNode(coord=(0, 0), map=warehouse_map)
-        end_node = SingleNode(coord=(0, 0), map=warehouse_map)
+    ids, test_cases = read_order_file("data/qvBox-warehouse-orders-list-part01.txt")
+    # for idx, case in enumerate(TEST_CASES):
+    #     test_cases.append(sample(case, idx + 1))
+    for idx, order in enumerate(test_cases[:10]):
+        # if len(order) >= 10:
+        #     order = order[:10]  # limit inputs for bnb's sake
+
+        item_nodes = prod_to_node(prod_db=prod_db, map_data=map_data, id_list=order)
+        start_node = SingleNode(coord=(0, 0), map=map_data)
+        end_node = SingleNode(coord=(0, 0), map=map_data)
 
         print(f"Testing nearest neighbor with input {order}...")
         nn_times.append(
             get_avg_runtime(
                 lambda: find_route_with_timeout(
-                    item_nodes, start_node, end_node, "n", 5
+                    item_nodes, start_node, end_node, "n", -1
                 )
             )
         )
         print(f"Testing BnB with input {order}...")
-        bab_times.append(
+        bnb_times.append(
             get_avg_runtime(
                 lambda: find_route_with_timeout(
-                    item_nodes, start_node, end_node, "b", 5
+                    item_nodes, start_node, end_node, "b", -1
                 )
             )
         )
@@ -109,15 +122,15 @@ if __name__ == "__main__":
     # report phase
     print("\nTest Report: \n============\n")
     print(f"Average execution time of branch and bound: ")
-    for idx, t in enumerate(bab_times):
-        print(f"Size={len(test_cases_truncated[idx])}: {t:.6f} seconds ({test_cases_truncated[idx]})")
+    for idx, t in enumerate(bnb_times):
+        print(f"Size={len(test_cases[idx])}: {t:.6f} seconds ({test_cases[idx]})")
     print(f"Average execution time of greedy: ")
     for idx, t in enumerate(nn_times):
-        print(f"Size={len(test_cases_truncated[idx])}: {t:.6f} seconds ({test_cases_truncated[idx]})")
+        print(f"Size={len(test_cases[idx])}: {t:.6f} seconds ({test_cases[idx]})")
 
     print("\nComparison: ")
     print("Size\t|B&B\t|Greedy")  # Header
-    for idx, t in enumerate(zip(bab_times, nn_times)):
-        print(f"{len(test_cases_truncated[idx])}\t|{t[0]:.3f}s\t|{t[1]:.3f}s")
+    for idx, t in enumerate(zip(bnb_times, nn_times)):
+        print(f"{len(test_cases[idx])}\t|{t[0]:.3f}s\t|{t[1]:.3f}s")
 
     print(f"Peak memory usage: {m}")
