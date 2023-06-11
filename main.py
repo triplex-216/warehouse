@@ -94,7 +94,7 @@ def input_start_end_pos(conf: Config):
         start_position = tuple(
             int(num) for num in input("> ").split(",")
         )
-        if is_not_shelve(conf.map_data, start_position):
+        if is_not_shelf(conf.map_data, start_position):
             print(f"Set start position to {start_position}.")
             conf.start_position = start_position
             break
@@ -109,7 +109,7 @@ def input_start_end_pos(conf: Config):
         end_position = tuple(
             int(num) for num in input("> ").split(",")
         )
-        if is_not_shelve(conf.map_data, end_position):
+        if is_not_shelf(conf.map_data, end_position):
             print(f"Set end position to {end_position}.")
             conf.end_position = end_position
             break
