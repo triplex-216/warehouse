@@ -52,22 +52,9 @@ test_order_lists = [
 ]
 
 
-def prod_to_node(order_list):
-    coord_set = set()
-    item_nodes = []
-    for prod in order_list:
-        if (prod.x, prod.y) in coord_set:
-            continue
-        else:
-            item_nodes.append(Node(prod.id, (prod.x, prod.y), prod._map))
-            coord_set.add((prod.x, prod.y))
-    return item_nodes
-
-
-
 if __name__ == "__main__":
-    order_list = [prod_db[item] for item in test_order_lists[1]]
-    item_nodes = prod_to_node(order_list)
+    order_list = [prod_db[item] for item in test_order_lists[2]]
+    item_nodes = [prod_to_node(prod) for prod in order_list]
     
     start_node = SingleNode(coord=(0, 0), map=map_data)
     end_node = SingleNode(coord=(39, 20), map=map_data)
@@ -76,7 +63,8 @@ if __name__ == "__main__":
     generate_cost_graph(input_nodes, start_node, end_node)
 
     # at least 30 rounds
-    rounds = max(int((len(input_nodes) ** 2) / 2), 30)
+    # rounds = max(int((len(input_nodes) ** 2) / 2), 30)
+    rounds = 30
     
     population, fit = genetic(item_nodes, start_node, end_node, rounds)
     print([n.coord for n in population], fit)
