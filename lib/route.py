@@ -201,6 +201,43 @@ def load_animation():
             sleep(0.1)
 
 
+def _find_route(
+    item_nodes: list[Node],
+    start_node: SingleNode,
+    end_node: SingleNode,
+    algorithm="g",
+    shared_list: list = [],
+):
+    """
+    NOTE: Do not use this function directly, as it has the potential to use up all
+    RAM when running BnB with an input that is large enough.
+    Use find_route_with_timeout for RAM protection and timeout if wished.
+    """
+
+    # Calculate the graph(distance and route between all the accessible entries)
+    start_ap, end_ap = start_node.aps_all[0], end_node.aps_all[0]
+    nodes = [start_node] + item_nodes + [end_node]
+    generate_cost_graph(nodes, start_node=start_node, end_node=end_node)
+
+    if algorithm == "b":  # branch and bound
+        total_cost, path = branch_and_bound(nodes, start_ap, end_ap)
+    elif algorithm == "g":  # greedy
+        total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
+    elif algorithm == "n":  # nearest neighbor
+        total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
+    elif algorithm == "t":
+        total_cost, path = genetic(item_nodes, start_node, end_node)
+    elif algorithm == "f":  # fallback
+        total_cost, path = default(nodes, start_ap, end_ap)
+
+    instructions, route = path_instructions(path, start_ap, end_ap)
+
+    # Save return values as tuple into shared list for use in timeout monitor function
+    shared_list.append((instructions, total_cost, route))
+
+    return instructions, total_cost, route
+
+
 def find_route(
     item_nodes: list[Node],
     start_node: SingleNode,
@@ -215,42 +252,6 @@ def find_route(
     NOTE: Timeout = -1 disables timeout, and the algorithm will run indefinitely or
     until it uses too much RAM.
     """
-
-    def _find_route(
-        item_nodes: list[Node],
-        start_node: SingleNode,
-        end_node: SingleNode,
-        algorithm="g",
-        shared_list: list = [],
-    ):
-        """
-        NOTE: Do not use this function directly, as it has the potential to use up all
-        RAM when running BnB with an input that is large enough.
-        Use find_route_with_timeout for RAM protection and timeout if wished.
-        """
-
-        # Calculate the graph(distance and route between all the accessible entries)
-        start_ap, end_ap = start_node.aps_all[0], end_node.aps_all[0]
-        nodes = [start_node] + item_nodes + [end_node]
-        generate_cost_graph(nodes, start_node=start_node, end_node=end_node)
-
-        if algorithm == "b":  # branch and bound
-            total_cost, path = branch_and_bound(nodes, start_ap, end_ap)
-        elif algorithm == "g":  # greedy
-            total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
-        elif algorithm == "n":  # nearest neighbor
-            total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
-        elif algorithm == "t":
-            total_cost, path = genetic(item_nodes, start_node, end_node)
-        elif algorithm == "f":  # fallback
-            total_cost, path = default(nodes, start_ap, end_ap)
-
-        instructions, route = path_instructions(path, start_ap, end_ap)
-
-        # Save return values as tuple into shared list for use in timeout monitor function
-        shared_list.append((instructions, total_cost, route))
-
-        return instructions, total_cost, route
 
     manager = multiprocessing.Manager()
     shared_list = manager.list()
