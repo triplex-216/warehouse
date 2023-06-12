@@ -103,6 +103,7 @@ if __name__ == "__main__":
         end_node = SingleNode(coord=(0, 0), map=map_data)
         item_locations = [prod_db[id] for id in order]
 
+        conf.default_algorithm = "n"
         print(f"Testing nearest neighbor with input {order}...")
         instr, total_cost, route, timeout = find_route(item_nodes, start_node, end_node, "n", -1)
         show_result(map_data, conf, item_locations, instr, total_cost, route, timeout)
@@ -111,6 +112,8 @@ if __name__ == "__main__":
                 lambda: find_route(item_nodes, start_node, end_node, "n", -1)
             )
         )
+
+        conf.default_algorithm = "b"
         print(f"Testing BnB with input {order}...")
         instr, total_cost, route, timeout = find_route(item_nodes, start_node, end_node, "b", -1)
         show_result(map_data, conf, item_locations, instr, total_cost, route, timeout)
