@@ -49,9 +49,10 @@ To run the application:
 $ python main.py
 ```
 
-If you do not wish to install any libraries, a packaged binary for Linux is provided. To run the packaged binary: 
+If you do not wish to install any libraries, a packaged binary is provided. To run the packaged binary: 
 
 ```bash
 $ chmod +x ./dist/main
-$ ./dist/main
+$ ./dist/main # Linux
+$ ./dist/main-windows-final.exe # Windows
 ```
