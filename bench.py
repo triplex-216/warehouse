@@ -95,8 +95,8 @@ if __name__ == "__main__":
     #     test_cases.append(sample(case, idx + 1))
     test_cases = TEST_CASES
     for idx, order in enumerate(TEST_CASES):
-        if len(order) >= 10:
-            order = order[:10]  # limit inputs for bnb's sake
+        # if len(order) >= 10:
+        #     order = order[:10]  # limit inputs for bnb's sake
 
         item_nodes = prod_to_node(prod_db=prod_db, map_data=map_data, id_list=order)
         start_node = SingleNode(coord=(0, 0), map=map_data)
