@@ -11,16 +11,31 @@ This document describes the setup and inputs used during tests, as well as the r
 - Python: 3.11.3
 
 # Test Procedure
+
 1. The script (`bench.py`) reads test cases. 
 2. Initiate the algorithm. The computation time is recorded and measured with Python's `time` module. Peak memory usage is measured with the `memory_profiler` module, which requires manual installation. 
 
 # Test Cases
 
 1. Size 1: 108335
+
+   ![Screenshot_20230611_184007](.assets/Screenshot_20230611_184007.png)
+
 2. Size 5: 108335, 391825, 340367, 286457, 661741
+
+   ![Screenshot_20230611_184018](.assets/Screenshot_20230611_184018.png)
+
 3. Size 10: 281610, 342706, 111873, 198029, 366109, 287261, 76283, 254489, 258540, 286457
+
+   ![Screenshot_20230611_184027](.assets/Screenshot_20230611_184027.png)
+
 4. Size 15: 427230, 372539, 396879, 391680, 208660, 105912, 332555, 227534, 68048, 188856, 736830, 736831, 479020, 103313, 1
+
+   ![Screenshot_20230611_184037](.assets/Screenshot_20230611_184037.png)
+
 5. Size 20: 633, 1321, 3401, 5329, 10438, 372539, 396879, 16880, 208660, 105912, 332555, 227534, 68048, 188856, 736830, 736831, 479020, 103313, 1, 20373
+
+   ![Screenshot_20230611_184103](.assets/Screenshot_20230611_184103.png)
 
 # Test Results
 
