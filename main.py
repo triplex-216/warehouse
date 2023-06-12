@@ -21,13 +21,6 @@ CONF = Config(
     prod_db=None,
 )
 
-ALGS = {
-    "b": "Branch and bound",
-    "g": "Greedy",
-    "n": "Nearest neighbor",
-    "t": "Genetic",
-}
-
 DATASET_FILE = "data/qvBox-warehouse-data-s23-v01.txt"
 ORDER_LIST_FILE = "data/qvBox-warehouse-orders-list-part01.txt"
 
@@ -154,7 +147,7 @@ def start_routing(conf: Config):
     # Read inventory data from text file
     map_data = conf.map_data
     prod_db = conf.prod_db
-    cols, rows = len(map_data), len(map_data[0])
+    
     while True:
         # Get item ids from user input
         item_ids = get_item_ids(conf)
@@ -176,20 +169,8 @@ def start_routing(conf: Config):
             algorithm=conf.default_algorithm,
             timeout=conf.default_timeout_value,
         )
-        # Draw text map
-        map_text = draw_text_map(map_data)
-        # Add route paths to map
-        map_text = add_paths_to_map(map_text, route, item_locations)
-        # Add axes to map for easier reading
-        map_full = add_axes_to_map(map_text, rows, cols)
-
-        # Show result
-        warn("\nWAREHOUSE MAP\n")
-        print_map(map_full)
-        print(instr)
-        print(
-            f"Total distance is {total_cost}. (Calculated with {'Nearest Neighbor' if timeout else ALGS[conf.default_algorithm]})"
-        )
+        
+        show_result(map_data, conf, item_locations, instr, total_cost, route, timeout)
 
         # save result to file
         if conf.save_instructions:
@@ -240,7 +221,7 @@ def get_item_ids(conf: Config):
             # Check if there's problem with the file
             if len(order_list) == 0:
                 warn(
-                    "The file doesn't exist or it is empty! Please check the file path!"
+                    "The file doesn't exist or it is empty, please check the file path."
                 )
                 break
 

@@ -1,5 +1,11 @@
 from numpy import transpose
 
+ALGS = {
+    "b": "Branch and bound",
+    "g": "Greedy",
+    "n": "Nearest neighbor",
+    "t": "Genetic",
+}
 class Menu:
     """
     Menu to be displayed in the TUI (text user interface).
@@ -265,3 +271,20 @@ def print_map(full_map: str):
     legends = f"{bold_text('SH')}: Shelf  {bold_text('WK')}: Worker  {bold_text('OR')}: Origin {bold_text('##')}: Routes  {bold_text('**')}: Shelf (Not a destination)  {bold_text('__')}: Empty"
     print(legends)
     print()
+
+def show_result(map_data, conf, item_locations, instr, total_cost, route, timeout):
+    cols, rows = len(map_data), len(map_data[0])
+    # Draw text map
+    map_text = draw_text_map(map_data)
+    # Add route paths to map
+    map_text = add_paths_to_map(map_text, route, item_locations)
+    # Add axes to map for easier reading
+    map_full = add_axes_to_map(map_text, rows, cols)
+
+    # Show result
+    warn("\nWAREHOUSE MAP\n")
+    print_map(map_full)
+    print(instr)
+    print(
+        f"Total distance is {total_cost}. (Calculated with {'Nearest Neighbor' if timeout else ALGS[conf.default_algorithm]})"
+    )

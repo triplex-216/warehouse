@@ -63,9 +63,6 @@ def crossover(
 def genetic(
     item_nodes, start_node, end_node, rounds=0
 ) -> tuple[list[list[AccessPoint]], list[float]]:
-    def show_individual(individual, start_node, end_node):
-        individual_path = start_node.aps + individual + end_node.aps
-        return f"{[n.coord for n in individual_path]}"
 
     # If only 1 node, return a path with the node
     if len(item_nodes) == 1:
