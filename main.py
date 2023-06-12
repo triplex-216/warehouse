@@ -95,7 +95,7 @@ def input_start_end_pos(conf: Config):
             conf.start_position = start_position
             break
         else:
-            start_position = input_data_as_list(f"Position {start_position} is a shelf, please try another position. ", "c", 1)[0]
+            start_position = input_data_as_list("Please try again ", "c", 1)[0]
             continue
 
     end_position = input_data_as_list("Please enter the end position ", "c", 1)[0]
@@ -105,7 +105,7 @@ def input_start_end_pos(conf: Config):
             conf.end_position = end_position
             break
         else:
-            end_position = input_data_as_list(f"Position {end_position} is a shelf, please try another position. ", "c", 1)[0]
+            end_position = input_data_as_list("Please try again ", "c", 1)[0]
             continue
  
     return start_position, end_position
@@ -262,7 +262,7 @@ def get_item_ids(conf: Config):
 
 def input_item_ids(conf):
     item_count = input_data_as_list(
-            "How many items would you like to fetch? (0 - 50)", "d", 1
+            "How many items would you like to fetch? (0 - 50) ", "d", 1
         )[0]
     while True:
         if 0< item_count <= 50:

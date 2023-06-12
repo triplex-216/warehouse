@@ -257,9 +257,10 @@ def read_order_file(file_path):
 def is_valid(map, coord):
     valid = True
     if coord[0] not in range(len(map)) or coord[1] not in range(len(map[0])):
-        print("Coordinate exceeds the range of map, please try again.")
+        print("Coordinate exceeds the range of map ")
         valid = False
     elif map[coord[0]][coord[1]] == 1:
+        print(f"Position {coord} is a shelf ")
         valid = False
     return valid
 
