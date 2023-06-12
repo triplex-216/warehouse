@@ -58,13 +58,13 @@ def input_config_save_instructions(conf: Config):
 
 def input_default_algorithm(conf: Config):
     str_default_algorithm = input_data_as_list(
-        "Choose a default algorithm of your choice (b/n/g)\nb - branch and bound; n - nearest neighbor; g - greedy; t - genetic",
+        "Choose a default algorithm of your choice (b/n/g/t)\nb - branch and bound; n - nearest neighbor; g - greedy; t - genetic",
         "s",
         1,
     )[0]
     while str_default_algorithm not in ALGS.keys():
         str_default_algorithm = input_data_as_list(
-            "Please choose a valid option. (b/n/g/t)",
+            "Please choose a valid algorithm. (b/n/g/t)",
             "s",
             1,
         )[0]
