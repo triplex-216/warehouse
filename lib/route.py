@@ -146,7 +146,7 @@ def path_instructions(
             instruction_str += f"Pick up the product {next.parent.id}!\n"
         ap = next
 
-    return instruction_str, route
+    return instruction_str, route, len(route)-1
 
 
 def get_step_instructions(trace: list[tuple]):
@@ -220,17 +220,17 @@ def _find_route(
     generate_cost_graph(nodes, start_node=start_node, end_node=end_node)
 
     if algorithm == "b":  # branch and bound
-        total_cost, path = branch_and_bound(nodes, start_ap, end_ap)
+        _cost, path = branch_and_bound(nodes, start_ap, end_ap)
     elif algorithm == "g":  # greedy
-        total_cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
+        _cost, path = greedy(nodes, start_ap, end_ap, init_ap=start_ap)
     elif algorithm == "n":  # nearest neighbor
-        total_cost, path = nearest_neighbor(nodes, start_ap, end_ap)
+        _cost, path = nearest_neighbor(nodes, start_ap, end_ap)
     elif algorithm == "t":
-        total_cost, path = genetic(item_nodes, start_node, end_node)
+        _cost, path = genetic(item_nodes, start_node, end_node)
     elif algorithm == "f":  # fallback
-        total_cost, path = default(nodes, start_ap, end_ap)
+        _cost, path = default(nodes, start_ap, end_ap)
 
-    instructions, route = path_instructions(path, start_ap, end_ap)
+    instructions, route, total_cost = path_instructions(path, start_ap, end_ap)
 
     # Save return values as tuple into shared list for use in timeout monitor function
     shared_list.append((instructions, total_cost, route))
