@@ -1,9 +1,21 @@
 # Warehouse Navigator
 
 ## Release Note
+- **Final** (06/11/2023)
+  - Visual improvements:  
+    - Highlight path on map in colors
+    - Loading animation
+
+  - Support genetic algorithm. 
+
+  - Speed up branch-and-bound by using Numba JIT when available.
+
+  - Other improvements. 
+
+
 - **Beta 2.0** (06/01/2023)
-  - Support Branch-and-bound algorithm with multiple access. 
-    - Will fall-back to the default algorithm upon timeout. 
+  - Support branch-and-bound algorithm with multiple access. 
+    - Will fallback to the default algorithm upon timeout. 
   
   - Support reading and processing order lists stored in files
   
@@ -18,18 +30,28 @@
   Initial release. 
 
 ## Get Started
-This application requires `Python` 3.10+ and `numpy`. 
+This application requires `Python` 3.10+. 
+
+`numpy` and `psutil` are required. To install: 
+
+```bash
+$ pip install -r requirements.txt
+```
+
+`numba` is a JIT compiler for Python, and boosts `numpy` operations remarkably. The application works without it, but it is highly recommended. 
+
+```bash
+$ pip install numba
+```
 
 To run the application:
 ```bash
-$ cd path-to-binary
-$ ./main-linux
-
-# Or if Python is installed on the machine
 $ python main.py
 ```
-## Features
-- ASCII-encoded text portrayal of the warehouse map. 
-  - Add number along axes for better readability. 
-  - Highlight paths with arrows. 
-- Step-by-step instruction in English. 
+
+If you do not wish to install any libraries, a packaged binary for Linux is provided. To run the packaged binary: 
+
+```bash
+$ chmod +x ./dist/main
+$ ./dist/main
+```
