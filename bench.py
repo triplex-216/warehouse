@@ -3,6 +3,7 @@ import timeit
 from math import floor
 from lib.core import read_inventory_data
 from lib.route import *
+from lib.tui import show_result
 from random import sample
 
 TEST_CASES = [
@@ -89,24 +90,30 @@ if __name__ == "__main__":
     bnb_times = []
     # test_cases = TEST_CASES[:3]
 
-    ids, test_cases = read_order_file("data/qvBox-warehouse-orders-list-part01.txt")
+    # ids, test_cases = read_order_file("data/qvBox-warehouse-orders-list-part01.txt")
     # for idx, case in enumerate(TEST_CASES):
     #     test_cases.append(sample(case, idx + 1))
-    for idx, order in enumerate(test_cases[:10]):
-        # if len(order) >= 10:
-        #     order = order[:10]  # limit inputs for bnb's sake
+    test_cases = TEST_CASES
+    for idx, order in enumerate(TEST_CASES):
+        if len(order) >= 10:
+            order = order[:10]  # limit inputs for bnb's sake
 
         item_nodes = prod_to_node(prod_db=prod_db, map_data=map_data, id_list=order)
         start_node = SingleNode(coord=(0, 0), map=map_data)
         end_node = SingleNode(coord=(0, 0), map=map_data)
+        item_locations = [prod_db[id] for id in order]
 
         print(f"Testing nearest neighbor with input {order}...")
+        instr, total_cost, route, timeout = find_route(item_nodes, start_node, end_node, "n", -1)
+        show_result(map_data, conf, item_locations, instr, total_cost, route, timeout)
         nn_times.append(
             get_avg_runtime(
                 lambda: find_route(item_nodes, start_node, end_node, "n", -1)
             )
         )
         print(f"Testing BnB with input {order}...")
+        instr, total_cost, route, timeout = find_route(item_nodes, start_node, end_node, "b", -1)
+        show_result(map_data, conf, item_locations, instr, total_cost, route, timeout)
         bnb_times.append(
             get_avg_runtime(
                 lambda: find_route(item_nodes, start_node, end_node, "b", -1)
