@@ -67,13 +67,13 @@ def input_default_algorithm(conf: Config):
 
 def input_timeout_value(conf: Config):
     timeout_value = input_data_as_list(
-            "Please enter the time you're glad to wait. (up to 60 seconds) ", "d", 1
-        )[0]
+        "Please enter the time you're glad to wait. (up to 60 seconds) ", "d", 1
+    )[0]
     while True:
         if timeout_value < 0 or timeout_value > 60:
             timeout_value = input_data_as_list(
-            "Invalid time, please try again! ", "d", 1
-        )[0]
+                "Invalid time, please try again! ", "d", 1
+            )[0]
         else:
             break
     conf.default_timeout_value = timeout_value
@@ -92,7 +92,7 @@ def input_start_end_pos(conf: Config):
             continue
 
     end_position = input_data_as_list("Please enter the end position ", "c", 1)[0]
-    while True:  
+    while True:
         if is_valid(conf.map_data, end_position):
             print(f"Set end position to {end_position}.")
             conf.end_position = end_position
@@ -100,7 +100,7 @@ def input_start_end_pos(conf: Config):
         else:
             end_position = input_data_as_list("Please try again ", "c", 1)[0]
             continue
- 
+
     return start_position, end_position
 
 
@@ -143,6 +143,7 @@ settings_menu = Menu(
 
 """ Start """
 
+
 def start_routing(conf: Config):
     # Read inventory data from text file
     map_data = conf.map_data
@@ -160,8 +161,8 @@ def start_routing(conf: Config):
         # use single node instance
         start_node = SingleNode(coord=conf.start_position, map=map_data)
         end_node = SingleNode(coord=conf.end_position, map=map_data)
-    
-        #start find route
+
+        # start find route
         instr, total_cost, route, timeout = find_route(
             item_nodes=item_nodes,
             start_node=start_node,
@@ -181,7 +182,9 @@ def start_routing(conf: Config):
             # Get the current date/time in ISO8601 format, e.g. 2023-05-24 11:42:08
             # and append .txt extension
             save_to_file(
-                f"reports/navigation-report-{datetime.datetime.now().replace(microsecond=0)}.txt",
+                os.path.abspath(
+                    f"reports/navigation-report-{str(datetime.datetime.now().replace(microsecond=0)).replace(':', '')}.txt"
+                ),
                 gen_instruction_metadata() + instr,
             )
 
@@ -203,7 +206,7 @@ def get_item_ids(conf: Config):
     )[0]
 
     while True:
-        if id_src in ['M', 'm']:
+        if id_src in ["M", "m"]:
             item_ids = input_item_ids(conf)
             change_pos = input_data_as_list(
                 "Do you want to change the start/end position now? ",
@@ -215,7 +218,7 @@ def get_item_ids(conf: Config):
             # DEBUG FEATURE: Pick random item when specified item ID does not exist
             break
 
-        elif id_src in ['A', 'a']:
+        elif id_src in ["A", "a"]:
             file_path = ORDER_LIST_FILE
             order_list = read_order_file(file_path)
             # Check if there's problem with the file
@@ -241,12 +244,13 @@ def get_item_ids(conf: Config):
 
     return item_ids
 
+
 def input_item_ids(conf):
     item_count = input_data_as_list(
-            "How many items would you like to fetch? (0 - 50) ", "d", 1
-        )[0]
+        "How many items would you like to fetch? (0 - 50) ", "d", 1
+    )[0]
     while True:
-        if 0< item_count <= 50:
+        if 0 < item_count <= 50:
             item_ids = input_data_as_list(
                 "Please input IDs of the items you wish to add to list",
                 "d",
@@ -269,15 +273,17 @@ def input_item_ids(conf):
                         )
             return item_ids
         else:
-            item_count = input_data_as_list("Invalid amount, please try again. (0 - 50) ", "d", 1)[0]
-    
+            item_count = input_data_as_list(
+                "Invalid amount, please try again. (0 - 50) ", "d", 1
+            )[0]
+
 
 def input_order_id(order_list):
     order_id = input_data_as_list(
-            f"Please give an valid id of order (1 - {len(order_list)}) ",
-            "d",
-            1,
-        )[0]
+        f"Please give an valid id of order (1 - {len(order_list)}) ",
+        "d",
+        1,
+    )[0]
     while True:
         try:
             item_ids = order_list[order_id]
@@ -285,10 +291,11 @@ def input_order_id(order_list):
             return item_ids
         except KeyError:
             order_id = input_data_as_list(
-            f"Invalid order id, please try again. (1 - {len(order_list)}) ",
-            "d",
-            1,
-        )[0]
+                f"Invalid order id, please try again. (1 - {len(order_list)}) ",
+                "d",
+                1,
+            )[0]
+
 
 """ Main Menu """
 
@@ -320,6 +327,8 @@ def main():
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()  # For PyInstaller to work
+
     # Set up argument parser for command line options
     # 1. Verbose (debug mode)
     # 2. Help

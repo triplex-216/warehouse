@@ -15,5 +15,5 @@ def gen_instruction_metadata():
 
 
 def save_to_file(filename, str_lines: list[str]):
-    with open(file=filename, mode="w") as f:
+    with open(file=filename, mode="w+") as f:
         f.writelines(str_lines)
